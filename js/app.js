@@ -40,18 +40,10 @@ document.addEventListener('keydown', e => {
 
 /* ---------- BOOT ---------- */
 function boot() {
-  // start with the seeded demo world so first-time visitors see something rich
-  DB = seedDemo();
-  // theme: prefer what's saved in the world; otherwise honour the OS preference
-  const saved = DB.meta && DB.meta.theme;
-  const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
-  applyTheme(saved || (prefersLight ? 'light' : 'dark'));
-  render();
-  // welcome notification — non-intrusive
-  setTimeout(() => {
-    notify(`Welcome — exploring "${DB.meta.name}". Press T for theme, / to search, N for new entity.`, 'info', { ttl: 4500 });
-  }, 400);
-  console.log('CODEX ready — ' + DB.entities.length + ' seed entities loaded');
+  const prefersLight = window.matchMedia &&
+    window.matchMedia('(prefers-color-scheme: light)').matches;
+  applyTheme(prefersLight ? 'light' : 'dark');
+  showSplash();
 }
 
 // Run boot once the DOM is parsed
