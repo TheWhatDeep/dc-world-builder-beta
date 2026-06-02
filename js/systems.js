@@ -80,17 +80,27 @@ function initMap(){
   wireMapChips();
   $$('[data-mapfilter]').forEach(b=>b.onclick=()=>{ mapState.filter=b.dataset.mapfilter; renderMapCarousel(); });
 
-  // pins: mouse-drag to reposition, click to inspect (existing behavior, preserved)
+  // pins: mouse-drag to reposition, click to inspect. The move/up listeners are
+  // attached on mousedown and removed on mouseup, so nothing accumulates on
+  // window as the map re-renders.
   $$('.map-pin',stage).forEach(pin=>{
-    const id=pin.dataset.pin; let moved=false,dragging=false;
-    pin.onmousedown=ev=>{ ev.stopPropagation(); dragging=true; moved=false; };
-    const mv=ev=>{ if(!dragging)return; moved=true; const r=stage.getBoundingClientRect();
-      let x=(ev.clientX-r.left)/r.width*100,y=(ev.clientY-r.top)/r.height*100;
-      x=Math.max(0,Math.min(100,x));y=Math.max(0,Math.min(100,y));
-      pin.style.left=x+'%';pin.style.top=y+'%'; ent(id).map={x,y}; };
-    const up=()=>{ if(dragging){dragging=false; if(!moved) openEntity(id); ent(id)._t=Date.now();} };
-    pin._mv=mv; pin._up=up;
-    window.addEventListener('mousemove',mv); window.addEventListener('mouseup',up);
+    const id=pin.dataset.pin;
+    pin.onmousedown=ev=>{
+      ev.stopPropagation();
+      let moved=false;
+      const mv=e=>{ moved=true; const r=stage.getBoundingClientRect();
+        let x=(e.clientX-r.left)/r.width*100, y=(e.clientY-r.top)/r.height*100;
+        x=Math.max(0,Math.min(100,x)); y=Math.max(0,Math.min(100,y));
+        pin.style.left=x+'%'; pin.style.top=y+'%'; const en=ent(id); if(en) en.map={x,y}; };
+      const up=()=>{
+        window.removeEventListener('mousemove',mv);
+        window.removeEventListener('mouseup',up);
+        if(!moved) openEntity(id);
+        const en=ent(id); if(en) en._t=Date.now();
+      };
+      window.addEventListener('mousemove',mv);
+      window.addEventListener('mouseup',up);
+    };
   });
 }
 /* (re)wire the carousel chips to the HTML5 drag API */
