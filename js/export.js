@@ -13,6 +13,7 @@ function buildDocBody(scope){
   present.forEach(k=>h+=`<li><a href="#sec-${k}">${TYPES[k].plural}</a> <span class="toc-n">${ents.filter(e=>e.type===k).length}</span></li>`);
   h+=`<li><a href="#sec-chrono">The Chronicle</a></li>`;
   if(DB.economy.length)h+=`<li><a href="#sec-econ">Economy</a></li>`;
+  if(DB.journal.length)h+=`<li><a href="#sec-journal">Campaign Journal</a></li>`;
   if(DB.notes&&scope!=='player')h+=`<li><a href="#sec-notes">Loremaster Notes</a></li>`;
   h+=`</ul></nav>`;
   // calendar
@@ -58,6 +59,14 @@ function buildDocBody(scope){
     const desc=r.description?`<div class="econ-desc">${esc(r.description)}</div>`:'';
     return `<div class="econ-item"><div class="econ-item-head"><strong>${esc(r.name)}</strong><span class="econ-tags"><span class="econ-tag">${esc(econRarity(r))}</span>${danger}</span></div>${val}${desc}</div>`;
   }).join('')+`</div></section>`; }
+  // campaign journal (player-facing — included in every scope)
+  if(DB.journal.length){ h+=`<section class="doc-sec" id="sec-journal"><h2>Campaign Journal</h2>`;
+    [...DB.journal].sort((a,b)=>(a._t||0)-(b._t||0)).forEach(s=>{
+      const linked=(s.body||'').replace(/\[\[([^\]]+)\]\]/g,(m,name)=>{const e=DB.entities.find(x=>x.name.toLowerCase()===name.toLowerCase());return e&&ents.includes(e)?`<a href="#${anchor(e.id)}" class="xref">${esc(name)}</a>`:esc(name);});
+      const bits=[]; if(s.date)bits.push(esc(s.date)); if(s.year!=null&&s.year!=='')bits.push(esc(String(s.year))+' '+esc(c.epoch));
+      h+=`<article class="doc-journal">${s.campaign?`<div class="dj-campaign">${esc(s.campaign)}</div>`:''}<h3 class="dj-title">${esc(s.title)||'Untitled session'}</h3>${bits.length?`<div class="dj-date">${bits.join(' · ')}</div>`:''}<div class="dj-body">${linked.replace(/\n/g,'<br>')}</div></article>`;
+    });
+    h+=`</section>`; }
   // notes
   if(DB.notes&&scope!=='player'){ const linked=DB.notes.replace(/\[\[([^\]]+)\]\]/g,(m,name)=>{const e=DB.entities.find(x=>x.name.toLowerCase()===name.toLowerCase());return e&&ents.includes(e)?`<a href="#${anchor(e.id)}" class="xref">${esc(name)}</a>`:esc(name);});
     h+=`<section class="doc-sec" id="sec-notes"><h2>Loremaster Notes</h2><div class="doc-notes">${linked.replace(/\n/g,'<br>')}</div></section>`; }
@@ -117,6 +126,11 @@ h1,h2,h3{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;line-hei
 .econ-val-line{font-size:13px;color:#6b5d44;font-style:italic}
 .econ-desc{font-size:13px;color:#5a4f3a;line-height:1.5}
 .doc-notes{background:#ece4d2;border:1px solid #d8cbb0;border-radius:10px;padding:24px 28px;font-size:15px}
+.doc-journal{margin-bottom:28px;padding-left:18px;border-left:3px solid #e0d5bd;break-inside:avoid}
+.dj-campaign{font-family:monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#9c6f23;margin-bottom:4px}
+.dj-title{font-size:25px;color:#3a2f1a;margin-bottom:3px}
+.dj-date{font-family:monospace;font-size:12px;color:#9a8a6a;margin-bottom:10px}
+.dj-body{font-size:15px;line-height:1.8;color:#3a2f1a}
 @media print{body{background:#fff}.wrap{padding:0 20px;max-width:100%}.doc-sec{page-break-inside:auto}.doc-entry,.dt-row{page-break-inside:avoid}.doc-toc{page-break-after:always}.doc-hero{page-break-after:avoid}}
 `;
 function exportHTML(scope){

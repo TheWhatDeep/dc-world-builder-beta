@@ -138,6 +138,13 @@ function exportTXT(scope){
     out.push('  • '+r.name+' — '+bits.join(' · '));
     if(r.description) out.push('      '+r.description.replace(/\n/g,'\n      '));
   }); }
+  // campaign journal (player-facing)
+  if(DB.journal.length){ out.push('','█ CAMPAIGN JOURNAL','═'.repeat(40)); [...DB.journal].sort((a,b)=>(a._t||0)-(b._t||0)).forEach(s=>{
+    const bits=[]; if(s.date)bits.push(s.date); if(s.year!=null&&s.year!=='')bits.push(s.year+' '+c.epoch);
+    out.push('','▶ '+(s.title||'Untitled session')+(s.campaign?'   ['+s.campaign+']':''));
+    if(bits.length) out.push('  '+bits.join(' · '));
+    if(s.body) out.push('  '+s.body.replace(/\[\[([^\]]+)\]\]/g,'$1').replace(/\n/g,'\n  '));
+  }); }
   // notes
   if(DB.notes && scope!=='player'){ out.push('','█ LOREMASTER NOTES','═'.repeat(40),DB.notes); }
   download(slug(DB.meta.name)+'.txt', out.join('\n'));
