@@ -19,7 +19,7 @@ function viewTimeline(){
     const orphans = pts.filter(p=>!eras.some(e=>p.year>=e.start&&p.year<e.end));
     body=`<div class="tl-wrap"><div class="tl-axis">`;
     grouped.forEach(g=>{
-      body+=`<div class="era-band"><div class="era-head"><div class="era-bar" style="color:${g.era.color}">${esc(g.era.name)}<div class="era-years">${g.era.start}–${g.era.end} ${esc(DB.calendar.epoch)}</div></div></div>`;
+      body+=`<div class="era-band"><div class="era-head" data-eraedit="${g.era.id}" title="Click to edit this era"><div class="era-bar" style="color:${g.era.color}">${esc(g.era.name)}<div class="era-years">${g.era.start}–${g.era.end} ${esc(DB.calendar.epoch)}</div></div><span class="era-edit-hint">${I.edit}</span></div>`;
       if(!g.items.length) body+=`<div class="tl-event"><div class="tl-date"></div><div class="tl-node" style="background:${g.era.color}"></div><div class="tl-card" style="opacity:.5"><p class="muted">— quiet years —</p></div></div>`;
       g.items.forEach(p=>body+=tlEvent(p,g.era.color));
       body+='</div>';
@@ -57,7 +57,7 @@ function tlEvent(p,color){
 }
 
 /* calendar editor */
-function openCalendarModal(){
+function openCalendarModal(focusEraId){
   const c=DB.calendar; const ov=$('#modalOverlay');
   ov.innerHTML=`<div class="modal wide"><div class="modal-head"><h3>${I.timeline} Calendar & Eras</h3><button class="close" data-mclose>${I.x}</button></div>
   <div class="modal-body">
@@ -78,6 +78,18 @@ function openCalendarModal(){
   function refreshEra(){ $('#eraEdit',ov).innerHTML=c.eras.map((e,i)=>eraRow(e,i)).join(''); wire(); }
   $('#addEra',ov).onclick=()=>{ c.eras.push({id:uid(),name:'New Age',start:0,end:100,color:'#6b8a9a'}); refreshEra(); notify('Era added — set its years and name.', 'success'); };
   wire();
+  // If asked to focus a specific era, scroll its row into view and briefly highlight it.
+  if(focusEraId){
+    setTimeout(()=>{
+      const row=$(`[data-eraid="${focusEraId}"]`,ov);
+      if(!row) return;
+      row.scrollIntoView({behavior:'smooth',block:'center'});
+      row.classList.add('era-focus-flash');
+      const nameInput=row.querySelector('[data-en]');
+      if(nameInput){ nameInput.focus(); nameInput.select(); }
+      setTimeout(()=>row.classList.remove('era-focus-flash'), 1800);
+    }, 60);
+  }
   $$('[data-mclose]',ov).forEach(b=>b.onclick=closeModal);
   $('#saveCal',ov).onclick=()=>{
     const months=$('#calMonths').value.split(',').map(s=>s.trim()).filter(Boolean);
@@ -103,7 +115,7 @@ function openCalendarModal(){
   ov.onclick=ev=>{if(ev.target===ov)closeModal();};
 }
 function eraRow(e,i){
-  return `<div class="era-row-edit flex gap aic" style="margin-bottom:8px">
+  return `<div class="era-row-edit flex gap aic" data-eraid="${e.id}" style="margin-bottom:8px">
     <input data-en value="${esc(e.name)}" style="flex:2" placeholder="Era name">
     <input data-es type="number" value="${e.start}" style="flex:1" placeholder="start">
     <input data-ee type="number" value="${e.end}" style="flex:1" placeholder="end">

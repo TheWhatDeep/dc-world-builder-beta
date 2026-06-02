@@ -236,9 +236,19 @@ span[style*="inline-flex"]>svg{width:100%;height:100%;display:block}
 .tl-wrap{position:relative;padding:20px 0}
 .tl-axis{position:relative;margin-left:140px;border-left:2px solid var(--line);padding-left:0}
 .era-band{position:relative;margin-bottom:6px}
-.era-head{display:flex;align-items:center;gap:10px;margin:22px 0 12px;margin-left:-140px}
+.era-head{display:flex;align-items:center;gap:10px;margin:22px 0 12px;margin-left:-140px;cursor:pointer;border-radius:6px;padding:4px 6px;transition:background-color .15s}
+.era-head:hover{background:var(--bg-hover)}
 .era-head .era-bar{width:128px;text-align:right;padding-right:12px;font-family:var(--serif);font-size:17px;color:var(--amber);font-weight:600}
 .era-head .era-years{font-family:var(--mono);font-size:10px;color:var(--ink-faint)}
+.era-edit-hint{width:14px;height:14px;color:var(--ink-faint);opacity:0;transition:opacity .15s;display:inline-flex;flex-shrink:0}
+.era-edit-hint svg{width:100%;height:100%}
+.era-head:hover .era-edit-hint{opacity:.85}
+@keyframes eraFocusFlash{
+  0%{background-color:transparent;outline-color:transparent}
+  20%{background-color:rgba(217,164,65,.18);outline-color:var(--amber)}
+  100%{background-color:transparent;outline-color:transparent}
+}
+.era-row-edit.era-focus-flash{outline:1px solid var(--amber);outline-offset:4px;border-radius:5px;animation:eraFocusFlash 1.8s ease-out}
 .tl-event{position:relative;margin-left:-140px;display:flex;gap:0;margin-bottom:9px;align-items:flex-start}
 .tl-event .tl-date{width:128px;text-align:right;padding-right:20px;font-family:var(--mono);font-size:11px;color:var(--ink-dim);padding-top:9px;flex-shrink:0}
 .tl-event .tl-node{position:absolute;left:128px;top:11px;width:13px;height:13px;border-radius:50%;background:var(--amber);border:2px solid var(--bg);transform:translateX(-6px);z-index:2}

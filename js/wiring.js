@@ -60,7 +60,8 @@ function wireView(){
   $$('#graphFilter [data-gf]',m).forEach(b=>b.onclick=()=>{UI.graphView=b.dataset.gf;renderView();});
 
   // timeline
-  if($('[data-editcal]')) $('[data-editcal]').onclick=openCalendarModal;
+  if($('[data-editcal]')) $('[data-editcal]').onclick=()=>openCalendarModal();
+  $$('[data-eraedit]',m).forEach(el=>el.onclick=()=>openCalendarModal(el.dataset.eraedit));
 
   // systems econ — modal-based add/edit (click a row to edit, button to add)
   if($('#addEcon')) $('#addEcon').onclick=()=>openResourceModal();
