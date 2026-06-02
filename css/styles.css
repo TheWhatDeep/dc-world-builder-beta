@@ -249,14 +249,33 @@ span[style*="inline-flex"]>svg{width:100%;height:100%;display:block}
 .tl-event .tl-card .tl-tags{margin-top:7px;display:flex;gap:6px;flex-wrap:wrap}
 
 /* ===== Map ===== */
-.map-stage{position:relative;height:calc(100vh - 210px);min-height:460px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#1a1610}
-#mapCanvas{position:absolute;inset:0;cursor:crosshair}
+.map-stage{position:relative;height:calc(100vh - 396px);min-height:300px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#1a1610}
+.map-stage.drag-over{outline:2px dashed var(--amber);outline-offset:-6px}
+#mapCanvas{position:absolute;inset:0}
 .map-pin{position:absolute;transform:translate(-50%,-100%);cursor:pointer;z-index:5;transition:transform .15s}
 .map-pin:hover{transform:translate(-50%,-100%) scale(1.15)}
 .map-pin svg{width:26px;height:26px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.6))}
 .map-pin .pin-label{position:absolute;left:50%;top:100%;transform:translateX(-50%);white-space:nowrap;font-family:var(--serif);font-size:13px;color:var(--ink);background:rgba(20,17,13,.82);padding:1px 7px;border-radius:4px;margin-top:1px;pointer-events:none}
 .map-hint{position:absolute;bottom:14px;left:14px;background:rgba(28,24,18,.9);border:1px solid var(--line);padding:8px 13px;border-radius:7px;font-size:11.5px;color:var(--ink-faint);max-width:280px}
 .map-tools{position:absolute;top:14px;left:14px;display:flex;gap:7px;flex-wrap:wrap;max-width:60%}
+/* cartography carousel (drag tray) */
+.map-carousel{margin-top:14px;border:1px solid var(--line);border-radius:10px;background:var(--bg-raised);padding:11px 13px}
+.map-carousel-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.map-filter-pill{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-dim);border:1px solid var(--line);border-radius:20px;padding:3px 11px;transition:all .15s}
+.map-filter-pill:hover{border-color:var(--amber);color:var(--ink)}
+.map-filter-pill.on{background:rgba(217,164,65,.14);border-color:var(--amber);color:var(--amber-bright)}
+.map-carousel-track{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;min-height:42px}
+.map-chip{display:flex;align-items:center;gap:7px;flex-shrink:0;background:var(--bg-panel);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:grab;user-select:none;transition:border-color .15s,transform .15s,opacity .15s}
+.map-chip:hover{border-color:var(--amber);transform:translateY(-2px)}
+.map-chip:active{cursor:grabbing}
+.map-chip .mc-ico{width:17px;height:17px;display:inline-flex;flex-shrink:0}
+.map-chip .mc-ico svg,.map-chip .mc-badge svg{width:100%;height:100%;display:block}
+.map-chip .mc-name{font-size:13px;color:var(--ink);white-space:nowrap}
+.map-chip .mc-badge{width:14px;height:14px;display:inline-flex;color:var(--sage);flex-shrink:0}
+.map-chip.pinned{opacity:.5}
+.map-chip.pinned .mc-name{color:var(--ink-dim)}
+.map-chip.dragging{opacity:.4;border-color:var(--amber)}
+.map-carousel-empty{font-size:12.5px;color:var(--ink-faint);padding:6px 2px}
 
 /* ===== Consistency ===== */
 .issue-card{display:flex;gap:13px;padding:14px 16px;border:1px solid var(--line);border-radius:8px;margin-bottom:11px;background:var(--bg-raised);transition:all .16s}

@@ -1,5 +1,8 @@
 /* ========== MAP / CARTOGRAPHY ========== */
-let mapState={placing:null};
+/* entity types that can be charted, and the carousel filter buttons */
+const MAP_PINNABLE = ['place','char','event','faction','spell'];
+const MAP_FILTERS = [['all','All'],['place','Places'],['char','Characters'],['event','Events'],['faction','Factions'],['spell','Spells']];
+let mapState={filter:'all'};
 function viewMap(){
   const pinned = DB.entities.filter(e=>e.map);
   return `<div class="view active">
@@ -12,23 +15,35 @@ function viewMap(){
         ${DB.map.image?`<button class="btn danger" id="clearMap">Clear</button>`:''}
       </div>
     </div>
-    <div class="map-tools" style="position:static;margin-bottom:12px;display:flex">
-      <span class="muted" style="font-size:12.5px;align-self:center;margin-right:8px">Pin an entity:</span>
-      <select id="pinSelect" style="width:auto;min-width:200px">
-        <option value="">— choose a location/character/event —</option>
-        ${DB.entities.filter(e=>['place','char','event'].includes(e.type)&&!e.map).map(e=>`<option value="${e.id}">${esc(TYPES[e.type].name)}: ${esc(e.name)}</option>`).join('')}
-      </select>
-      <button class="btn sm amber" id="startPin" style="margin-left:8px">Place on map →</button>
-    </div>
     <div class="map-stage" id="mapStage">
       <div id="mapCanvas"></div>
       ${pinned.map(e=>mapPin(e)).join('')}
       ${!DB.map.image?`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;color:var(--ink-faint);text-align:center;padding:30px;pointer-events:none">
         ${I.map}<div style="font-family:var(--serif);font-size:21px;color:var(--ink-dim);margin:12px 0 6px">No map image yet</div>
-        <p>Upload a map of your world, then pin locations onto it.<br>Or pin onto the blank canvas to sketch spatial relationships.</p></div>`:''}
-      <div class="map-hint" id="mapHint">${mapState.placing?`Click anywhere to place <b>${esc(ent(mapState.placing)?.name||'')}</b>`:'Drag pins to reposition · click a pin to inspect'}</div>
-    </div>`+(DB.map.image?'':'')+`
+        <p>Upload a map of your world, then drag entities from the tray below onto it.<br>Or drop them on the blank canvas to sketch spatial relationships.</p></div>`:''}
+      <div class="map-hint" id="mapHint">Drag an entity from the tray onto the map · drag a pin to move it · click a pin to inspect</div>
+    </div>
+    ${mapCarousel()}
   </div>`;
+}
+/* the bottom tray: type-filter pills + a horizontal strip of draggable entity chips */
+function mapCarousel(){
+  return `<div class="map-carousel" id="mapCarousel">
+    <div class="map-carousel-filters">
+      ${MAP_FILTERS.map(([k,label])=>`<button class="map-filter-pill ${mapState.filter===k?'on':''}" data-mapfilter="${k}">${esc(label)}</button>`).join('')}
+    </div>
+    <div class="map-carousel-track" id="carouselTrack">${mapChips()}</div>
+  </div>`;
+}
+function mapChips(){
+  const f=mapState.filter;
+  const list=DB.entities.filter(e=>MAP_PINNABLE.includes(e.type) && (f==='all'||e.type===f));
+  if(!list.length) return `<div class="map-carousel-empty">Nothing to chart yet — create some ${f==='all'?'places, characters, events, factions, or spells':TYPES[f].plural.toLowerCase()} first.</div>`;
+  return list.map(e=>`<div class="map-chip${e.map?' pinned':''}" draggable="true" data-chip="${e.id}" title="${e.map?'Already on the map — drag to move it':'Drag onto the map to place it'}">
+    <span class="mc-ico" style="color:${TYPES[e.type].color}">${I[TYPES[e.type].icon]}</span>
+    <span class="mc-name">${esc(e.name)}</span>
+    ${e.map?`<span class="mc-badge">${I.check}</span>`:''}
+  </div>`).join('');
 }
 function mapPin(e){
   const c=TYPES[e.type].color;
@@ -46,16 +61,26 @@ function initMap(){
   if($('#clearMap')) $('#clearMap').onclick=()=>{ DB.map.image=null; renderView(); };
   if($('[data-mapname]')) $('[data-mapname]').onclick=()=>{ const n=prompt('Map name:',DB.map.name); if(n){DB.map.name=n;renderView();} };
 
-  $('#startPin').onclick=()=>{ const id=$('#pinSelect').value; if(!guard(id,'Choose a location, character, or event to place first.','warn'))return; mapState.placing=id; $('#mapHint').innerHTML=`Click anywhere to place <b>${esc(ent(id).name)}</b>`; stage.style.cursor='crosshair'; notify(`Click the map to place ${ent(id).name}.`, 'info', {ttl:2200}); };
-
-  stage.onclick=ev=>{
-    if(!mapState.placing) return;
-    if(ev.target.closest('.map-pin')) return;
+  // drop target: dragging an entity chip onto the stage pins it — or moves it if already pinned.
+  // The dragged id travels via dataTransfer, not a module variable.
+  stage.addEventListener('dragover', ev=>{ ev.preventDefault(); ev.dataTransfer.dropEffect='copy'; stage.classList.add('drag-over'); });
+  stage.addEventListener('dragleave', ev=>{ if(!stage.contains(ev.relatedTarget)) stage.classList.remove('drag-over'); });
+  stage.addEventListener('drop', ev=>{
+    ev.preventDefault(); stage.classList.remove('drag-over');
+    const id=ev.dataTransfer.getData('text/plain'); const e=ent(id); if(!e) return;
     const r=stage.getBoundingClientRect();
-    const x=((ev.clientX-r.left)/r.width*100), y=((ev.clientY-r.top)/r.height*100);
-    const e=ent(mapState.placing); e.map={x,y}; e._t=Date.now(); mapState.placing=null; stage.style.cursor=''; renderView(); toast('Pinned '+e.name);
-  };
-  // pins: click + drag
+    let x=(ev.clientX-r.left)/r.width*100, y=(ev.clientY-r.top)/r.height*100;
+    x=Math.max(0,Math.min(100,x)); y=Math.max(0,Math.min(100,y));
+    const wasPinned=!!e.map;
+    e.map={x,y}; e._t=Date.now(); renderView();
+    notify(wasPinned?`Moved ${e.name} on the map.`:`Pinned ${e.name} to the map.`, 'success');
+  });
+
+  // carousel: draggable chips + type-filter pills
+  wireMapChips();
+  $$('[data-mapfilter]').forEach(b=>b.onclick=()=>{ mapState.filter=b.dataset.mapfilter; renderMapCarousel(); });
+
+  // pins: mouse-drag to reposition, click to inspect (existing behavior, preserved)
   $$('.map-pin',stage).forEach(pin=>{
     const id=pin.dataset.pin; let moved=false,dragging=false;
     pin.onmousedown=ev=>{ ev.stopPropagation(); dragging=true; moved=false; };
@@ -67,6 +92,21 @@ function initMap(){
     pin._mv=mv; pin._up=up;
     window.addEventListener('mousemove',mv); window.addEventListener('mouseup',up);
   });
+}
+/* (re)wire the carousel chips to the HTML5 drag API */
+function wireMapChips(){
+  const stage=$('#mapStage');
+  $$('#carouselTrack .map-chip').forEach(chip=>{
+    chip.addEventListener('dragstart', ev=>{ ev.dataTransfer.setData('text/plain', chip.dataset.chip); ev.dataTransfer.effectAllowed='copyMove'; chip.classList.add('dragging'); });
+    chip.addEventListener('dragend', ()=>{ chip.classList.remove('dragging'); stage&&stage.classList.remove('drag-over'); });
+  });
+}
+/* swap carousel contents when a filter pill is clicked (no full re-render) */
+function renderMapCarousel(){
+  const track=$('#carouselTrack'); if(!track) return;
+  $$('[data-mapfilter]').forEach(b=>b.classList.toggle('on', b.dataset.mapfilter===mapState.filter));
+  track.innerHTML=mapChips();
+  wireMapChips();
 }
 function pickImage(cb){
   const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
