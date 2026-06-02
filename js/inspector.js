@@ -42,6 +42,7 @@ function renderInspector(){
       <div><label>Died / Dissolved</label><input id="f_death" type="number" value="${e.death??''}" placeholder="—"></div>
     </div>`:''}
     ${isDated?`<label>Year occurred</label><input id="f_when" type="number" value="${e.when??''}" placeholder="—">`:''}
+    ${e.type==='spell'?renderSpellSection(e):''}
 
     <div class="detail-section">
       <h4>${I.link} Relationships</h4>
@@ -160,6 +161,28 @@ function renderLangSection(e){
     <button class="btn sm" id="genLexicon" style="margin-top:8px">${I.dice} Generate 8 words from a phonology</button>
   </div>`;
 }
+/* spell-only fields. Creator is derived from the "created" relationship (the
+   relationship is the source of truth — no separate creatorId is stored). */
+function spellCreatorId(e){
+  for(const c of DB.entities){
+    if(c.type!=='char') continue;
+    if((c.rels||[]).some(r=>r.type==='created' && r.target===e.id)) return c.id;
+  }
+  return '';
+}
+function renderSpellSection(e){
+  const creatorId = spellCreatorId(e);
+  const chars = DB.entities.filter(c=>c.type==='char');
+  return `<div class="two-col">
+    <div><label>Mana cost</label><input id="f_mana" type="number" value="${e.mana??''}" placeholder="—"></div>
+    <div><label>Year created (optional)</label><input id="f_created" type="number" value="${e.created??''}" placeholder="—"></div>
+  </div>
+  <label>Creator</label>
+  <select id="f_creator">
+    <option value="">— unknown —</option>
+    ${chars.map(c=>`<option value="${c.id}" ${c.id===creatorId?'selected':''}>${esc(c.name)}</option>`).join('')}
+  </select>`;
+}
 
 function wireInspector(e){
   $('#inspClose').onclick = closeInspector;
@@ -171,6 +194,39 @@ function wireInspector(e){
   if($('#f_birth')) $('#f_birth').oninput=ev=>save('birth',ev.target.value===''?null:+ev.target.value);
   if($('#f_death')) $('#f_death').oninput=ev=>save('death',ev.target.value===''?null:+ev.target.value);
   if($('#f_when'))  $('#f_when').oninput =ev=>save('when', ev.target.value===''?null:+ev.target.value);
+
+  // spell-only fields (mana, year created, creator)
+  if($('#f_mana'))    $('#f_mana').oninput    = ev=>save('mana',    ev.target.value===''?null:+ev.target.value);
+  if($('#f_created')) $('#f_created').oninput = ev=>save('created', ev.target.value===''?null:+ev.target.value);
+  if($('#f_creator')) $('#f_creator').onchange = ev=>{
+    const newId = ev.target.value;
+    const oldId = spellCreatorId(e);
+    if(newId===oldId) return;
+    // sever the previous creator's "created" link (and its inverse on this spell)
+    if(oldId){
+      const oc = ent(oldId);
+      if(oc){
+        removeInverse(oc.id, {type:'created', target:e.id});
+        oc.rels = (oc.rels||[]).filter(x=>!(x.type==='created' && x.target===e.id));
+      }
+    }
+    // attach the new creator (mirrors the addRel pattern, with reciprocal)
+    if(newId){
+      const nc = ent(newId);
+      if(nc){
+        nc.rels = nc.rels||[];
+        if(!nc.rels.some(x=>x.type==='created' && x.target===e.id)){
+          nc.rels.push({type:'created', target:e.id});
+          addInverse(nc.id, 'created', e.id);
+        }
+      }
+    }
+    e._t=Date.now();
+    const nc = newId?ent(newId):null;
+    notify(nc ? `${nc.name} is now credited as the creator of ${e.name||'this spell'}.`
+              : `Creator cleared for ${e.name||'this spell'}.`, nc?'success':'info');
+    renderInspector();
+  };
 
   // relationships (bidirectional)
   $('#addRel').onclick = ()=>{

@@ -28,6 +28,8 @@ function seedDemo(){
   const magic = mk({type:'concept',name:'Mnemurgy',desc:'The art of shaping memory — reading it, trading it, stealing it, erasing it. The foundation of the Archive\'s power and the continent\'s strange economy.',tags:['magic-system']});
   const culture = mk({type:'culture',name:'The Veilborn',desc:'Those born in the fog-cities, who hold that nothing is truly gone while one person still remembers it. They keep their dead present in daily counsel.',tags:['people']});
 
+  const recall = mk({type:'spell',name:'Mnemurgic Recall',desc:'An incantation that draws a single buried memory to the surface — one\'s own or, at far greater risk, another\'s. It is the Pale Archive\'s first lesson and its most quietly feared.',mana:3,created:516,tags:['mnemurgy','incantation']});
+
   // relationships
   const R=(a,t,b)=>{a.rels.push({type:t,target:b.id}); const inv=INVERSE[t]; if(inv)b.rels.push({type:inv,target:a.id});};
   R(sera,'member of',archive); R(sera,'speaks',oldTongue); R(sera,'located in',veil);
@@ -39,6 +41,7 @@ function seedDemo(){
   R(sundering,'associated with',hollow); R(pact,'associated with',league);
   R(league,'associated with',ember); R(culture,'speaks',oldTongue);
   R(veil,'associated with',magic); R(mira,'child of',kael);
+  R(sera,'created',recall); R(recall,'associated with',magic);
 
   w.economy=[{id:uid(),name:'Sunsteel',scarcity:8},{id:uid(),name:'Bottled Memory',scarcity:30},{id:uid(),name:'Fogwheat',scarcity:62},{id:uid(),name:'Bridge-tolls',scarcity:45},{id:uid(),name:'Forgotten Names',scarcity:4}];
   w.notes='The central tension of [[Aetheria]] is simple: in a world ruled by [[Mnemurgy]], to be remembered is to have power, and to be forgotten is to cease — to become one of [[The Hollow]].\n\nThe [[Pale Archive]] sits at the center of every web. They do not rule openly, yet [[Seraphine Vael]] decides who is remembered as a rightful heir and who is quietly let slip. When [[Kaelen Dross]] fell at [[The Last March on Veilmarch]], it was the Archive — not the League — who chose how he would be remembered, and therefore whether [[Mirae Dross]] would inherit at all.\n\nOPEN THREADS:\n- Does Seraphine truly remember a future life, or is it an Archive fabrication?\n- The recipe for [[Sunsteel]] — who outside Emberhold knows it?\n- The [[Bridgewright League]] funded the forges. What do they want in return that hasn\'t come due yet?';

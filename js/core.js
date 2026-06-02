@@ -9,6 +9,7 @@ const I = {
   concept:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"/></svg>',
   culture:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 21h18M5 21V10l7-5 7 5v11M9 21v-5h6v5M9 13h.01M15 13h.01"/></svg>',
   language:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5h16M9 3v2c0 5-2.5 9-6 11M5 9c0 3 3.5 6 8 7M13 21l4-9 4 9M14.5 17h5"/></svg>',
+  spell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 3 L12.2 7.8 L17 10 L12.2 12.2 L10 17 L7.8 12.2 L3 10 L7.8 7.8 Z"/><path d="M18 14.5 L19 17 L21.5 18 L19 19 L18 21.5 L17 19 L14.5 18 L17 17 Z"/></svg>',
   search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
   plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>',
   x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>',
@@ -47,6 +48,7 @@ const TYPES = {
   culture: {name:'Culture',   plural:'Cultures',   icon:'culture',  color:'#c99a5a', desc:'Peoples, traditions'},
   language:{name:'Language',  plural:'Languages',  icon:'language', color:'#7a8aaa', desc:'Tongues, scripts, conlangs'},
   concept: {name:'Concept',   plural:'Concepts',   icon:'concept',  color:'#aa8acc', desc:'Magic, religion, ideas'},
+  spell:   {name:'Spell',     plural:'Grimoire',   icon:'spell',    color:'#8a6bcc', desc:'Spells, incantations, magic effects'},
 };
 const TYPE_KEYS = Object.keys(TYPES);
 
@@ -63,7 +65,7 @@ function newWorld(){
       {id:'era2', name:'The Sundering', start:500, end:520, color:'#c0584f'},
       {id:'era3', name:'The Long Peace', start:520, end:1200, color:'#8a9a6b'},
     ]},
-    entities:[],      // {id,type,name,desc,canon,tags,fields:{},rels:[{type,target}],birth,death,when,map:{x,y},lang:{words:[]}}
+    entities:[],      // {id,type,name,desc,canon,tags,fields:{},rels:[{type,target}],birth,death,when,map:{x,y},lang:{words:[]},mana,created}
     notes:'',         // freeform lore document
     map:{ image:null, name:'The Known World' },
     economy:[],       // {id,name,scarcity,value,note}
