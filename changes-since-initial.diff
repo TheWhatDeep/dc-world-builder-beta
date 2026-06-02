@@ -1,0 +1,928 @@
+diff --git a/css/styles.css b/css/styles.css
+index 34d0d10..1069b56 100644
+--- a/css/styles.css
++++ b/css/styles.css
+@@ -43,7 +43,7 @@ body{
+   background-image:
+     radial-gradient(ellipse at 20% 10%, var(--grad-1), transparent 50%),
+     radial-gradient(ellipse at 80% 90%, var(--grad-2), transparent 50%),
+-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
++    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+ }
+ ::-webkit-scrollbar{width:10px;height:10px}
+ ::-webkit-scrollbar-track{background:var(--bg)}
+@@ -103,15 +103,15 @@ span[style*="inline-flex"]>svg{width:100%;height:100%;display:block}
+   width:228px;flex-shrink:0;background:var(--bg-raised);border-right:1px solid var(--line);
+   display:flex;flex-direction:column;overflow-y:auto;
+ }
+-.nav-section{padding:14px 0 6px}
+-.nav-label{font-family:var(--mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-faint);padding:4px 18px 8px}
++.nav-section{padding:7px 0 3px}
++.nav-label{font-family:var(--mono);font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-faint);padding:2px 18px 5px}
+ .nav-item{
+-  display:flex;align-items:center;gap:11px;padding:8px 18px;font-size:13.5px;color:var(--ink-dim);
++  display:flex;align-items:center;gap:10px;padding:5px 18px;font-size:13px;color:var(--ink-dim);
+   transition:all .15s;border-left:2px solid transparent;cursor:pointer;position:relative;
+ }
+ .nav-item:hover{background:var(--bg-hover);color:var(--ink)}
+ .nav-item.active{background:linear-gradient(90deg,rgba(217,164,65,.12),transparent);color:var(--amber-bright);border-left-color:var(--amber)}
+-.nav-item .ico{width:17px;height:17px;flex-shrink:0;opacity:.85}
++.nav-item .ico{width:16px;height:16px;flex-shrink:0;opacity:.85}
+ .nav-item .count{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--ink-faint);background:var(--bg);padding:1px 7px;border-radius:9px}
+ .nav-item.active .count{color:var(--amber);background:rgba(217,164,65,.12)}
+ 
+@@ -236,9 +236,19 @@ span[style*="inline-flex"]>svg{width:100%;height:100%;display:block}
+ .tl-wrap{position:relative;padding:20px 0}
+ .tl-axis{position:relative;margin-left:140px;border-left:2px solid var(--line);padding-left:0}
+ .era-band{position:relative;margin-bottom:6px}
+-.era-head{display:flex;align-items:center;gap:10px;margin:22px 0 12px;margin-left:-140px}
++.era-head{display:flex;align-items:center;gap:10px;margin:22px 0 12px;margin-left:-140px;cursor:pointer;border-radius:6px;padding:4px 6px;transition:background-color .15s}
++.era-head:hover{background:var(--bg-hover)}
+ .era-head .era-bar{width:128px;text-align:right;padding-right:12px;font-family:var(--serif);font-size:17px;color:var(--amber);font-weight:600}
+ .era-head .era-years{font-family:var(--mono);font-size:10px;color:var(--ink-faint)}
++.era-edit-hint{width:14px;height:14px;color:var(--ink-faint);opacity:0;transition:opacity .15s;display:inline-flex;flex-shrink:0}
++.era-edit-hint svg{width:100%;height:100%}
++.era-head:hover .era-edit-hint{opacity:.85}
++@keyframes eraFocusFlash{
++  0%{background-color:transparent;outline-color:transparent}
++  20%{background-color:rgba(217,164,65,.18);outline-color:var(--amber)}
++  100%{background-color:transparent;outline-color:transparent}
++}
++.era-row-edit.era-focus-flash{outline:1px solid var(--amber);outline-offset:4px;border-radius:5px;animation:eraFocusFlash 1.8s ease-out}
+ .tl-event{position:relative;margin-left:-140px;display:flex;gap:0;margin-bottom:9px;align-items:flex-start}
+ .tl-event .tl-date{width:128px;text-align:right;padding-right:20px;font-family:var(--mono);font-size:11px;color:var(--ink-dim);padding-top:9px;flex-shrink:0}
+ .tl-event .tl-node{position:absolute;left:128px;top:11px;width:13px;height:13px;border-radius:50%;background:var(--amber);border:2px solid var(--bg);transform:translateX(-6px);z-index:2}
+@@ -249,14 +259,33 @@ span[style*="inline-flex"]>svg{width:100%;height:100%;display:block}
+ .tl-event .tl-card .tl-tags{margin-top:7px;display:flex;gap:6px;flex-wrap:wrap}
+ 
+ /* ===== Map ===== */
+-.map-stage{position:relative;height:calc(100vh - 210px);min-height:460px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#1a1610}
+-#mapCanvas{position:absolute;inset:0;cursor:crosshair}
++.map-stage{position:relative;height:calc(100vh - 396px);min-height:300px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#1a1610}
++.map-stage.drag-over{outline:2px dashed var(--amber);outline-offset:-6px}
++#mapCanvas{position:absolute;inset:0}
+ .map-pin{position:absolute;transform:translate(-50%,-100%);cursor:pointer;z-index:5;transition:transform .15s}
+ .map-pin:hover{transform:translate(-50%,-100%) scale(1.15)}
+ .map-pin svg{width:26px;height:26px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.6))}
+ .map-pin .pin-label{position:absolute;left:50%;top:100%;transform:translateX(-50%);white-space:nowrap;font-family:var(--serif);font-size:13px;color:var(--ink);background:rgba(20,17,13,.82);padding:1px 7px;border-radius:4px;margin-top:1px;pointer-events:none}
+ .map-hint{position:absolute;bottom:14px;left:14px;background:rgba(28,24,18,.9);border:1px solid var(--line);padding:8px 13px;border-radius:7px;font-size:11.5px;color:var(--ink-faint);max-width:280px}
+ .map-tools{position:absolute;top:14px;left:14px;display:flex;gap:7px;flex-wrap:wrap;max-width:60%}
++/* cartography carousel (drag tray) */
++.map-carousel{margin-top:14px;border:1px solid var(--line);border-radius:10px;background:var(--bg-raised);padding:11px 13px}
++.map-carousel-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
++.map-filter-pill{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-dim);border:1px solid var(--line);border-radius:20px;padding:3px 11px;transition:all .15s}
++.map-filter-pill:hover{border-color:var(--amber);color:var(--ink)}
++.map-filter-pill.on{background:rgba(217,164,65,.14);border-color:var(--amber);color:var(--amber-bright)}
++.map-carousel-track{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;min-height:42px}
++.map-chip{display:flex;align-items:center;gap:7px;flex-shrink:0;background:var(--bg-panel);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:grab;user-select:none;transition:border-color .15s,transform .15s,opacity .15s}
++.map-chip:hover{border-color:var(--amber);transform:translateY(-2px)}
++.map-chip:active{cursor:grabbing}
++.map-chip .mc-ico{width:17px;height:17px;display:inline-flex;flex-shrink:0}
++.map-chip .mc-ico svg,.map-chip .mc-badge svg{width:100%;height:100%;display:block}
++.map-chip .mc-name{font-size:13px;color:var(--ink);white-space:nowrap}
++.map-chip .mc-badge{width:14px;height:14px;display:inline-flex;color:var(--sage);flex-shrink:0}
++.map-chip.pinned{opacity:.5}
++.map-chip.pinned .mc-name{color:var(--ink-dim)}
++.map-chip.dragging{opacity:.4;border-color:var(--amber)}
++.map-carousel-empty{font-size:12.5px;color:var(--ink-faint);padding:6px 2px}
+ 
+ /* ===== Consistency ===== */
+ .issue-card{display:flex;gap:13px;padding:14px 16px;border:1px solid var(--line);border-radius:8px;margin-bottom:11px;background:var(--bg-raised);transition:all .16s}
+@@ -297,9 +326,47 @@ span[style*="inline-flex"]>svg{width:100%;height:100%;display:block}
+ .gen-node .gn-name:hover{color:var(--amber)}
+ 
+ .econ-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line-soft)}
++.econ-row:hover{background:var(--bg-hover)}
+ .econ-bar{flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden}
+ .econ-bar div{height:100%;background:linear-gradient(90deg,var(--amber-deep),var(--amber));border-radius:4px}
+-.econ-row .econ-val{font-family:var(--mono);font-size:11px;color:var(--ink-dim);width:46px;text-align:right}
++.econ-row .econ-val{font-family:var(--mono);font-size:11px;color:var(--ink-dim);width:66px;text-align:right;white-space:nowrap;flex-shrink:0}
++.econ-danger{padding:2px 9px;border-radius:20px;font-size:10px;font-family:var(--mono);letter-spacing:.04em;border:1px solid;white-space:nowrap;flex-shrink:0}
++.econ-danger.d-mild{color:var(--amber);border-color:rgba(217,164,65,.45);background:rgba(217,164,65,.1)}
++.econ-danger.d-significant{color:var(--rust);border-color:rgba(187,107,61,.5);background:rgba(187,107,61,.12)}
++.econ-danger.d-severe{color:var(--crimson);border-color:rgba(192,88,79,.55);background:rgba(192,88,79,.14)}
++.econ-danger.d-catastrophic{color:#f3e6df;border-color:var(--crimson);background:rgba(192,88,79,.42)}
++
++/* campaign journal */
++.journal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
++.journal-card{background:var(--bg-panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;cursor:pointer;transition:border-color .16s,transform .16s,box-shadow .16s}
++.journal-card:hover{border-color:var(--amber);transform:translateY(-2px);box-shadow:var(--shadow-sm)}
++.jc-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:7px}
++.jc-campaign{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--amber)}
++.jc-date{font-family:var(--mono);font-size:10px;color:var(--ink-faint);white-space:nowrap}
++.jc-title{font-family:var(--serif);font-size:21px;color:var(--ink);line-height:1.2;margin-bottom:8px}
++.jc-snippet{font-size:13px;color:var(--ink-dim);line-height:1.55}
++.jc-refs{display:flex;align-items:center;gap:5px;margin-top:13px;padding-top:11px;border-top:1px solid var(--line-soft)}
++.jc-ref-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
++.jc-ref-n{font-family:var(--mono);font-size:10px;color:var(--ink-faint);margin-left:5px}
++
++/* session preview (read mode) */
++.jp-modal{max-width:720px}
++.jp-head{border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:22px}
++.jp-campaign{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:9px}
++.jp-title{font-family:var(--serif);font-size:33px;color:var(--ink);line-height:1.12;margin-bottom:9px}
++.jp-date{font-family:var(--mono);font-size:12px;color:var(--ink-faint)}
++.jp-text{font-family:var(--body);font-size:16px;line-height:1.85;color:var(--ink)}
++.jp-refs{margin-top:28px;padding-top:18px;border-top:1px solid var(--line-soft)}
++.jp-refs-label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:11px}
++.jp-refs-list{display:flex;flex-wrap:wrap;gap:8px}
++
++/* inline [[entity]] chips inside a journal body + reference list */
++.jl-ref{display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:5px;border:1px solid var(--line);font-size:.85em;font-family:var(--mono);cursor:pointer;text-decoration:none;transition:background .15s;white-space:nowrap}
++.jl-ref:hover{background:var(--bg-hover)}
++.jl-ref .jl-ico{width:13px;height:13px;display:inline-flex}
++.jl-ref-missing{cursor:default;border-style:dashed;color:var(--ink-faint)}
++.jl-ref-missing:hover{background:none}
++.se-body{min-height:240px;line-height:1.7}
+ 
+ /* generator output */
+ .gen-out{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+@@ -313,7 +380,7 @@ span[style*="inline-flex"]>svg{width:100%;height:100%;display:block}
+ .center{text-align:center}
+ .flex{display:flex}.gap{gap:10px}.wrap{flex-wrap:wrap}.aic{align-items:center}.jcb{justify-content:space-between}
+ .mt{margin-top:14px}.mb{margin-bottom:14px}
+-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
++.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end}
+ .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+ .divider{height:1px;background:var(--line-soft);margin:18px 0}
+ .pill-toggle{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+diff --git a/index.html b/index.html
+index a9da7f1..7ce6b89 100644
+--- a/index.html
++++ b/index.html
+@@ -25,6 +25,7 @@
+ <script src="js/graph.js"></script>
+ <script src="js/timeline.js"></script>
+ <script src="js/systems.js"></script>
++<script src="js/journal.js"></script>
+ <script src="js/wiring.js"></script>
+ <script src="js/persistence.js"></script>
+ <script src="js/export.js"></script>
+diff --git a/js/core.js b/js/core.js
+index eb1cff2..64ea59d 100644
+--- a/js/core.js
++++ b/js/core.js
+@@ -9,6 +9,7 @@ const I = {
+   concept:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"/></svg>',
+   culture:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 21h18M5 21V10l7-5 7 5v11M9 21v-5h6v5M9 13h.01M15 13h.01"/></svg>',
+   language:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5h16M9 3v2c0 5-2.5 9-6 11M5 9c0 3 3.5 6 8 7M13 21l4-9 4 9M14.5 17h5"/></svg>',
++  spell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 3 L12.2 7.8 L17 10 L12.2 12.2 L10 17 L7.8 12.2 L3 10 L7.8 7.8 Z"/><path d="M18 14.5 L19 17 L21.5 18 L19 19 L18 21.5 L17 19 L14.5 18 L17 17 Z"/></svg>',
+   search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+   plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>',
+   x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+@@ -47,6 +48,7 @@ const TYPES = {
+   culture: {name:'Culture',   plural:'Cultures',   icon:'culture',  color:'#c99a5a', desc:'Peoples, traditions'},
+   language:{name:'Language',  plural:'Languages',  icon:'language', color:'#7a8aaa', desc:'Tongues, scripts, conlangs'},
+   concept: {name:'Concept',   plural:'Concepts',   icon:'concept',  color:'#aa8acc', desc:'Magic, religion, ideas'},
++  spell:   {name:'Spell',     plural:'Grimoire',   icon:'spell',    color:'#8a6bcc', desc:'Spells, incantations, magic effects'},
+ };
+ const TYPE_KEYS = Object.keys(TYPES);
+ 
+@@ -63,10 +65,11 @@ function newWorld(){
+       {id:'era2', name:'The Sundering', start:500, end:520, color:'#c0584f'},
+       {id:'era3', name:'The Long Peace', start:520, end:1200, color:'#8a9a6b'},
+     ]},
+-    entities:[],      // {id,type,name,desc,canon,tags,fields:{},rels:[{type,target}],birth,death,when,map:{x,y},lang:{words:[]}}
++    entities:[],      // {id,type,name,desc,canon,tags,fields:{},rels:[{type,target}],birth,death,when,map:{x,y},lang:{words:[]},mana,created}
+     notes:'',         // freeform lore document
+     map:{ image:null, name:'The Known World' },
+-    economy:[],       // {id,name,scarcity,value,note}
++    economy:[],       // {id,name,description,rarity,value,scarcity,danger} — scarcity kept for back-compat
++    journal:[],       // campaign session log {id,title,campaign,date,year,body,_t}
+     branches:[],      // saved alternate snapshots {id,name,date,data}
+   };
+ }
+diff --git a/js/export.js b/js/export.js
+index 76d8f46..0c7951f 100644
+--- a/js/export.js
++++ b/js/export.js
+@@ -13,6 +13,7 @@ function buildDocBody(scope){
+   present.forEach(k=>h+=`<li><a href="#sec-${k}">${TYPES[k].plural}</a> <span class="toc-n">${ents.filter(e=>e.type===k).length}</span></li>`);
+   h+=`<li><a href="#sec-chrono">The Chronicle</a></li>`;
+   if(DB.economy.length)h+=`<li><a href="#sec-econ">Economy</a></li>`;
++  if(DB.journal.length)h+=`<li><a href="#sec-journal">Campaign Journal</a></li>`;
+   if(DB.notes&&scope!=='player')h+=`<li><a href="#sec-notes">Loremaster Notes</a></li>`;
+   h+=`</ul></nav>`;
+   // calendar
+@@ -52,7 +53,20 @@ function buildDocBody(scope){
+   else h+=`<p><em>No dated events recorded.</em></p>`;
+   h+=`</section>`;
+   // economy
+-  if(DB.economy.length){ h+=`<section class="doc-sec" id="sec-econ"><h2>Economy & Resources</h2><div class="econ-grid">`+DB.economy.map(r=>`<div class="econ-item"><strong>${esc(r.name)}</strong><span class="econ-tag">${r.scarcity>70?'plentiful':r.scarcity>45?'common':r.scarcity>25?'scarce':r.scarcity>8?'rare':'legendary'}</span></div>`).join('')+`</div></section>`; }
++  if(DB.economy.length){ h+=`<section class="doc-sec" id="sec-econ"><h2>Economy & Resources</h2><div class="econ-grid">`+DB.economy.map(r=>{
++    const danger=(r.danger&&r.danger!=='None')?`<span class="econ-tag danger">${esc(r.danger)} danger</span>`:'';
++    const val=r.value?`<div class="econ-val-line">${esc(r.value)}</div>`:'';
++    const desc=r.description?`<div class="econ-desc">${esc(r.description)}</div>`:'';
++    return `<div class="econ-item"><div class="econ-item-head"><strong>${esc(r.name)}</strong><span class="econ-tags"><span class="econ-tag">${esc(econRarity(r))}</span>${danger}</span></div>${val}${desc}</div>`;
++  }).join('')+`</div></section>`; }
++  // campaign journal (player-facing — included in every scope)
++  if(DB.journal.length){ h+=`<section class="doc-sec" id="sec-journal"><h2>Campaign Journal</h2>`;
++    [...DB.journal].sort((a,b)=>(a._t||0)-(b._t||0)).forEach(s=>{
++      const linked=(s.body||'').replace(/\[\[([^\]]+)\]\]/g,(m,name)=>{const e=DB.entities.find(x=>x.name.toLowerCase()===name.toLowerCase());return e&&ents.includes(e)?`<a href="#${anchor(e.id)}" class="xref">${esc(name)}</a>`:esc(name);});
++      const bits=[]; if(s.date)bits.push(esc(s.date)); if(s.year!=null&&s.year!=='')bits.push(esc(String(s.year))+' '+esc(c.epoch));
++      h+=`<article class="doc-journal">${s.campaign?`<div class="dj-campaign">${esc(s.campaign)}</div>`:''}<h3 class="dj-title">${esc(s.title)||'Untitled session'}</h3>${bits.length?`<div class="dj-date">${bits.join(' · ')}</div>`:''}<div class="dj-body">${linked.replace(/\n/g,'<br>')}</div></article>`;
++    });
++    h+=`</section>`; }
+   // notes
+   if(DB.notes&&scope!=='player'){ const linked=DB.notes.replace(/\[\[([^\]]+)\]\]/g,(m,name)=>{const e=DB.entities.find(x=>x.name.toLowerCase()===name.toLowerCase());return e&&ents.includes(e)?`<a href="#${anchor(e.id)}" class="xref">${esc(name)}</a>`:esc(name);});
+     h+=`<section class="doc-sec" id="sec-notes"><h2>Loremaster Notes</h2><div class="doc-notes">${linked.replace(/\n/g,'<br>')}</div></section>`; }
+@@ -103,10 +117,20 @@ h1,h2,h3{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;line-hei
+ .dt-year{font-family:monospace;font-size:12px;color:#9c6f23;width:90px;text-align:right;flex-shrink:0;padding-top:3px}
+ .dt-dot{width:11px;height:11px;border-radius:50%;background:#c9a441;border:2px solid #f5f0e6;flex-shrink:0;margin-top:4px}
+ .dt-body{flex:1}.dt-desc{color:#7a6a4a;font-size:14px}
+-.econ-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+-.econ-item{background:#ece4d2;border:1px solid #ddd0b5;border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center}
+-.econ-tag{font-family:monospace;font-size:10px;text-transform:uppercase;color:#9a8a6a}
++.econ-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
++.econ-item{background:#ece4d2;border:1px solid #ddd0b5;border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;break-inside:avoid}
++.econ-item-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
++.econ-tags{display:flex;gap:6px;flex-shrink:0}
++.econ-tag{font-family:monospace;font-size:10px;text-transform:uppercase;color:#9a8a6a;white-space:nowrap}
++.econ-tag.danger{color:#a8392f}
++.econ-val-line{font-size:13px;color:#6b5d44;font-style:italic}
++.econ-desc{font-size:13px;color:#5a4f3a;line-height:1.5}
+ .doc-notes{background:#ece4d2;border:1px solid #d8cbb0;border-radius:10px;padding:24px 28px;font-size:15px}
++.doc-journal{margin-bottom:28px;padding-left:18px;border-left:3px solid #e0d5bd;break-inside:avoid}
++.dj-campaign{font-family:monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#9c6f23;margin-bottom:4px}
++.dj-title{font-size:25px;color:#3a2f1a;margin-bottom:3px}
++.dj-date{font-family:monospace;font-size:12px;color:#9a8a6a;margin-bottom:10px}
++.dj-body{font-size:15px;line-height:1.8;color:#3a2f1a}
+ @media print{body{background:#fff}.wrap{padding:0 20px;max-width:100%}.doc-sec{page-break-inside:auto}.doc-entry,.dt-row{page-break-inside:avoid}.doc-toc{page-break-after:always}.doc-hero{page-break-after:avoid}}
+ `;
+ function exportHTML(scope){
+diff --git a/js/inspector.js b/js/inspector.js
+index ebcce05..cea13a6 100644
+--- a/js/inspector.js
++++ b/js/inspector.js
+@@ -42,6 +42,7 @@ function renderInspector(){
+       <div><label>Died / Dissolved</label><input id="f_death" type="number" value="${e.death??''}" placeholder="—"></div>
+     </div>`:''}
+     ${isDated?`<label>Year occurred</label><input id="f_when" type="number" value="${e.when??''}" placeholder="—">`:''}
++    ${e.type==='spell'?renderSpellSection(e):''}
+ 
+     <div class="detail-section">
+       <h4>${I.link} Relationships</h4>
+@@ -160,6 +161,28 @@ function renderLangSection(e){
+     <button class="btn sm" id="genLexicon" style="margin-top:8px">${I.dice} Generate 8 words from a phonology</button>
+   </div>`;
+ }
++/* spell-only fields. Creator is derived from the "created" relationship (the
++   relationship is the source of truth — no separate creatorId is stored). */
++function spellCreatorId(e){
++  for(const c of DB.entities){
++    if(c.type!=='char') continue;
++    if((c.rels||[]).some(r=>r.type==='created' && r.target===e.id)) return c.id;
++  }
++  return '';
++}
++function renderSpellSection(e){
++  const creatorId = spellCreatorId(e);
++  const chars = DB.entities.filter(c=>c.type==='char');
++  return `<div class="two-col">
++    <div><label>Mana cost</label><input id="f_mana" type="number" value="${e.mana??''}" placeholder="—"></div>
++    <div><label>Year created (optional)</label><input id="f_created" type="number" value="${e.created??''}" placeholder="—"></div>
++  </div>
++  <label>Creator</label>
++  <select id="f_creator">
++    <option value="">— unknown —</option>
++    ${chars.map(c=>`<option value="${c.id}" ${c.id===creatorId?'selected':''}>${esc(c.name)}</option>`).join('')}
++  </select>`;
++}
+ 
+ function wireInspector(e){
+   $('#inspClose').onclick = closeInspector;
+@@ -172,6 +195,39 @@ function wireInspector(e){
+   if($('#f_death')) $('#f_death').oninput=ev=>save('death',ev.target.value===''?null:+ev.target.value);
+   if($('#f_when'))  $('#f_when').oninput =ev=>save('when', ev.target.value===''?null:+ev.target.value);
+ 
++  // spell-only fields (mana, year created, creator)
++  if($('#f_mana'))    $('#f_mana').oninput    = ev=>save('mana',    ev.target.value===''?null:+ev.target.value);
++  if($('#f_created')) $('#f_created').oninput = ev=>save('created', ev.target.value===''?null:+ev.target.value);
++  if($('#f_creator')) $('#f_creator').onchange = ev=>{
++    const newId = ev.target.value;
++    const oldId = spellCreatorId(e);
++    if(newId===oldId) return;
++    // sever the previous creator's "created" link (and its inverse on this spell)
++    if(oldId){
++      const oc = ent(oldId);
++      if(oc){
++        removeInverse(oc.id, {type:'created', target:e.id});
++        oc.rels = (oc.rels||[]).filter(x=>!(x.type==='created' && x.target===e.id));
++      }
++    }
++    // attach the new creator (mirrors the addRel pattern, with reciprocal)
++    if(newId){
++      const nc = ent(newId);
++      if(nc){
++        nc.rels = nc.rels||[];
++        if(!nc.rels.some(x=>x.type==='created' && x.target===e.id)){
++          nc.rels.push({type:'created', target:e.id});
++          addInverse(nc.id, 'created', e.id);
++        }
++      }
++    }
++    e._t=Date.now();
++    const nc = newId?ent(newId):null;
++    notify(nc ? `${nc.name} is now credited as the creator of ${e.name||'this spell'}.`
++              : `Creator cleared for ${e.name||'this spell'}.`, nc?'success':'info');
++    renderInspector();
++  };
++
+   // relationships (bidirectional)
+   $('#addRel').onclick = ()=>{
+     const type=$('#relType').value, target=$('#relTarget').value;
+diff --git a/js/journal.js b/js/journal.js
+new file mode 100644
+index 0000000..f5ef27d
+--- /dev/null
++++ b/js/journal.js
+@@ -0,0 +1,153 @@
++/* ==========================================================
++   CAMPAIGN JOURNAL
++   Session logs with [[entity]] references. Clicking a card opens
++   a read-only preview; the preview's Edit button (and "+ New
++   Session") open the editor. Sessions live in DB.journal.
++   ========================================================== */
++
++/* ---------- helpers ---------- */
++/* unique entities referenced via [[name]] in a body, in first-seen order */
++function journalRefs(text){
++  const seen=new Set(), out=[];
++  [...(text||'').matchAll(/\[\[([^\]]+)\]\]/g)].forEach(m=>{
++    const e=DB.entities.find(x=>x.name.toLowerCase()===m[1].trim().toLowerCase());
++    if(e && !seen.has(e.id)){ seen.add(e.id); out.push(e); }
++  });
++  return out;
++}
++/* render a body: escape text, turn [[name]] into clickable chips (dashed if no match), keep line breaks */
++function renderJournalBody(text){
++  if(!text || !text.trim()) return '<p class="muted">No log written yet.</p>';
++  let out='', last=0; const re=/\[\[([^\]]+)\]\]/g; let m;
++  while((m=re.exec(text))){
++    out += esc(text.slice(last, m.index));
++    const name=m[1].trim();
++    const e=DB.entities.find(x=>x.name.toLowerCase()===name.toLowerCase());
++    out += e
++      ? `<span class="jl-ref" data-open="${e.id}" style="border-color:${TYPES[e.type].color}66;color:${TYPES[e.type].color}">${esc(name)}</span>`
++      : `<span class="jl-ref jl-ref-missing" title="No matching entity">${esc(name)}</span>`;
++    last = m.index + m[0].length;
++  }
++  out += esc(text.slice(last));
++  return out.replace(/\n/g,'<br>');
++}
++/* "521 CE" + real date, joined */
++function journalDateBits(s){
++  const bits=[];
++  if(s.date) bits.push(esc(s.date));
++  if(s.year!=null && s.year!=='') bits.push(`${esc(String(s.year))} ${esc(DB.calendar.epoch)}`);
++  return bits;
++}
++
++/* ---------- view ---------- */
++function viewJournal(){
++  const sessions=[...DB.journal].sort((a,b)=>(b._t||0)-(a._t||0));
++  return `<div class="view active">
++    <div class="view-head">
++      <div><h1 class="view-title"><span class="dot"></span>Campaign Journal</h1>
++      <div class="view-sub">Session logs and play notes — ${DB.journal.length} ${DB.journal.length===1?'entry':'entries'}</div></div>
++      <div class="view-actions">
++        <button class="btn amber" data-newsession>${I.plus} New Session</button>
++      </div>
++    </div>
++    ${DB.journal.length
++      ? `<div class="journal-grid">`+sessions.map(journalCard).join('')+`</div>`
++      : `<div class="empty">${I.book}
++          <div class="big">No sessions logged yet</div>
++          <p class="muted">Keep a running journal of your campaign. Reference any entity with <kbd>[[name]]</kbd> — links stay live.</p>
++          <button class="btn amber" style="margin-top:18px" data-newsession>${I.plus} Write the first session</button>
++        </div>`}
++  </div>`;
++}
++
++function journalCard(s){
++  const refs=journalRefs(s.body);
++  const dateBits=journalDateBits(s);
++  const plain = (s.body||'').replace(/\[\[([^\]]+)\]\]/g,'$1').replace(/\s+/g,' ').trim();
++  return `<div class="journal-card" data-session="${s.id}">
++    <div class="jc-top">
++      ${s.campaign?`<span class="jc-campaign">${esc(s.campaign)}</span>`:`<span class="jc-campaign muted">No campaign</span>`}
++      ${dateBits.length?`<span class="jc-date">${dateBits.join(' · ')}</span>`:''}
++    </div>
++    <h3 class="jc-title">${esc(s.title)||'<span class="muted">Untitled session</span>'}</h3>
++    ${plain?`<div class="jc-snippet">${esc(plain.slice(0,160))}${plain.length>160?'…':''}</div>`:`<div class="jc-snippet muted">No log written yet…</div>`}
++    ${refs.length?`<div class="jc-refs">${refs.slice(0,6).map(e=>`<span class="jc-ref-dot" style="background:${TYPES[e.type].color}" title="${esc(e.name)}"></span>`).join('')}<span class="jc-ref-n">${refs.length} ${refs.length===1?'reference':'references'}</span></div>`:''}
++  </div>`;
++}
++
++/* ---------- read-only preview ---------- */
++function openSessionPreview(id){
++  const s=DB.journal.find(x=>x.id===id);
++  if(!s) return notify('That session is no longer in the journal.', 'error');
++  const refs=journalRefs(s.body);
++  const dateBits=journalDateBits(s);
++  const ov=$('#modalOverlay');
++  ov.innerHTML=`<div class="modal wide jp-modal"><div class="modal-head"><h3>${I.book} Session Log</h3><button class="close" data-mclose>${I.x}</button></div>
++    <div class="modal-body jp-body">
++      <div class="jp-head">
++        ${s.campaign?`<div class="jp-campaign">${esc(s.campaign)}</div>`:''}
++        <h2 class="jp-title">${esc(s.title)||'<span class="muted">Untitled session</span>'}</h2>
++        ${dateBits.length?`<div class="jp-date">${dateBits.join('&nbsp;&nbsp;·&nbsp;&nbsp;')}</div>`:''}
++      </div>
++      <div class="jp-text">${renderJournalBody(s.body)}</div>
++      ${refs.length?`<div class="jp-refs"><div class="jp-refs-label">Entities referenced</div>
++        <div class="jp-refs-list">${refs.map(e=>`<span class="jl-ref" data-open="${e.id}" style="border-color:${TYPES[e.type].color}66;color:${TYPES[e.type].color}"><span class="jl-ico">${I[TYPES[e.type].icon]}</span>${esc(e.name)}</span>`).join('')}</div></div>`:''}
++    </div>
++    <div class="modal-foot">
++      <button class="btn" data-mclose>Close</button>
++      <button class="btn amber" id="jpEdit">${I.edit} Edit</button>
++    </div></div>`;
++  ov.classList.add('open');
++  $$('[data-mclose]',ov).forEach(b=>b.onclick=closeModal);
++  ov.onclick=ev=>{ if(ev.target===ov) closeModal(); };
++  $('#jpEdit',ov).onclick=()=>openSessionEditor(id);   // swaps modal content to the editor
++  // entity chips → close preview, open that entity's inspector
++  $$('[data-open]',ov).forEach(el=>el.onclick=()=>{ const eid=el.dataset.open; closeModal(); openEntity(eid); });
++}
++
++/* ---------- editor ---------- */
++function openSessionEditor(id){
++  const editing=!!id;
++  const s=editing ? DB.journal.find(x=>x.id===id) : null;
++  if(editing && !s) return notify('That session is no longer in the journal.', 'error');
++  const cur=s || {title:'',campaign:'',date:'',year:null,body:''};
++  const ov=$('#modalOverlay');
++  ov.innerHTML=`<div class="modal wide"><div class="modal-head"><h3>${I.book} ${editing?'Edit Session':'New Session'}</h3><button class="close" data-mclose>${I.x}</button></div>
++    <div class="modal-body">
++      <label>Title</label>
++      <input id="seTitle" value="${esc(cur.title)}" placeholder="The Pale Seat, Session 12…" autocomplete="off">
++      <label>Campaign</label>
++      <input id="seCampaign" value="${esc(cur.campaign||'')}" placeholder="The Sundering Saga" autocomplete="off">
++      <div class="two-col">
++        <div><label>Date played</label><input id="seDate" value="${esc(cur.date||'')}" placeholder="2024-03-15" autocomplete="off"></div>
++        <div><label>In-world year</label><input id="seYear" type="number" value="${cur.year??''}" placeholder="—"></div>
++      </div>
++      <label>Session log</label>
++      <textarea id="seBody" class="se-body" placeholder="What happened this session? Reference any entity with [[name]] — it becomes a clickable link in the preview.">${esc(cur.body||'')}</textarea>
++    </div>
++    <div class="modal-foot">
++      ${editing?`<button class="btn danger" id="seDelete" style="margin-right:auto">${I.trash} Delete</button>`:''}
++      <button class="btn" data-mclose>Cancel</button>
++      <button class="btn amber" id="seSave">${editing?'Save Changes':'Add Session'}</button>
++    </div></div>`;
++  ov.classList.add('open');
++  $$('[data-mclose]',ov).forEach(b=>b.onclick=closeModal);
++  ov.onclick=ev=>{ if(ev.target===ov) closeModal(); };
++
++  $('#seSave',ov).onclick=()=>{
++    const title=$('#seTitle',ov).value.trim();
++    if(!guard(title, 'Give the session a title before saving.', 'warn')) return;
++    const yRaw=$('#seYear',ov).value;
++    const data={ title, campaign:$('#seCampaign',ov).value.trim(), date:$('#seDate',ov).value.trim(), year: yRaw===''?null:+yRaw, body:$('#seBody',ov).value };
++    if(editing){ Object.assign(s, data); s._t=Date.now(); }
++    else DB.journal.push(Object.assign({id:uid(), _t:Date.now()}, data));
++    closeModal(); renderView();
++    notify(editing?`Updated "${title}".`:`Session "${title}" added to the journal.`, 'success');
++  };
++  if($('#seDelete',ov)) $('#seDelete',ov).onclick=()=>{
++    if(!confirm(`Delete session "${s.title}"? This can't be undone.`)) return;
++    const t=s.title; DB.journal=DB.journal.filter(x=>x.id!==s.id);
++    closeModal(); renderView(); notify(`Deleted "${t}".`, 'info');
++  };
++  setTimeout(()=>{ const n=$('#seTitle',ov); n&&n.focus(); }, 40);
++}
+diff --git a/js/persistence.js b/js/persistence.js
+index 4a06ff7..eac447a 100644
+--- a/js/persistence.js
++++ b/js/persistence.js
+@@ -131,7 +131,20 @@ function exportTXT(scope){
+     });
+   });
+   // economy
+-  if(DB.economy.length){ out.push('','█ ECONOMY & RESOURCES','═'.repeat(40)); DB.economy.forEach(r=>out.push('  • '+r.name+' — '+(r.scarcity>45?'common':r.scarcity>25?'scarce':'rare'))); }
++  if(DB.economy.length){ out.push('','█ ECONOMY & RESOURCES','═'.repeat(40)); DB.economy.forEach(r=>{
++    const bits=[econRarity(r)];
++    if(r.danger&&r.danger!=='None') bits.push(r.danger+' danger');
++    if(r.value) bits.push(r.value);
++    out.push('  • '+r.name+' — '+bits.join(' · '));
++    if(r.description) out.push('      '+r.description.replace(/\n/g,'\n      '));
++  }); }
++  // campaign journal (player-facing)
++  if(DB.journal.length){ out.push('','█ CAMPAIGN JOURNAL','═'.repeat(40)); [...DB.journal].sort((a,b)=>(a._t||0)-(b._t||0)).forEach(s=>{
++    const bits=[]; if(s.date)bits.push(s.date); if(s.year!=null&&s.year!=='')bits.push(s.year+' '+c.epoch);
++    out.push('','▶ '+(s.title||'Untitled session')+(s.campaign?'   ['+s.campaign+']':''));
++    if(bits.length) out.push('  '+bits.join(' · '));
++    if(s.body) out.push('  '+s.body.replace(/\[\[([^\]]+)\]\]/g,'$1').replace(/\n/g,'\n  '));
++  }); }
+   // notes
+   if(DB.notes && scope!=='player'){ out.push('','█ LOREMASTER NOTES','═'.repeat(40),DB.notes); }
+   download(slug(DB.meta.name)+'.txt', out.join('\n'));
+diff --git a/js/seed.js b/js/seed.js
+index 049d6af..3464cd5 100644
+--- a/js/seed.js
++++ b/js/seed.js
+@@ -28,6 +28,8 @@ function seedDemo(){
+   const magic = mk({type:'concept',name:'Mnemurgy',desc:'The art of shaping memory — reading it, trading it, stealing it, erasing it. The foundation of the Archive\'s power and the continent\'s strange economy.',tags:['magic-system']});
+   const culture = mk({type:'culture',name:'The Veilborn',desc:'Those born in the fog-cities, who hold that nothing is truly gone while one person still remembers it. They keep their dead present in daily counsel.',tags:['people']});
+ 
++  const recall = mk({type:'spell',name:'Mnemurgic Recall',desc:'An incantation that draws a single buried memory to the surface — one\'s own or, at far greater risk, another\'s. It is the Pale Archive\'s first lesson and its most quietly feared.',mana:3,created:516,tags:['mnemurgy','incantation']});
++
+   // relationships
+   const R=(a,t,b)=>{a.rels.push({type:t,target:b.id}); const inv=INVERSE[t]; if(inv)b.rels.push({type:inv,target:a.id});};
+   R(sera,'member of',archive); R(sera,'speaks',oldTongue); R(sera,'located in',veil);
+@@ -39,8 +41,19 @@ function seedDemo(){
+   R(sundering,'associated with',hollow); R(pact,'associated with',league);
+   R(league,'associated with',ember); R(culture,'speaks',oldTongue);
+   R(veil,'associated with',magic); R(mira,'child of',kael);
+-
+-  w.economy=[{id:uid(),name:'Sunsteel',scarcity:8},{id:uid(),name:'Bottled Memory',scarcity:30},{id:uid(),name:'Fogwheat',scarcity:62},{id:uid(),name:'Bridge-tolls',scarcity:45},{id:uid(),name:'Forgotten Names',scarcity:4}];
++  R(sera,'created',recall); R(recall,'associated with',magic);
++
++  w.economy=[
++    {id:uid(),name:'Sunsteel',description:'A radiant alloy forged only in Emberhold\'s volcanic heart — the one substance that can wound the Hollow. Its recipe is a guarded state secret.',rarity:'Legendary',value:'A king\'s ransom by the ingot',scarcity:6,danger:'Significant'},
++    {id:uid(),name:'Bottled Memory',description:'Recollections drawn from the living or the dead and sealed in glass, traded openly in Veilmarch. The Archive sets the going rate.',rarity:'Rare',value:'10–500 marks, by vintage',scarcity:24,danger:'Severe'},
++    {id:uid(),name:'Fogwheat',description:'A pale grain that thrives in the perpetual mist of the fog-cities. The staple loaf of the Veilborn.',rarity:'Common',value:'A few coppers a bushel',scarcity:62,danger:'None'},
++    {id:uid(),name:'Bridge-tolls',description:'Not a good but a stranglehold: the Bridgewright League taxes every crossing, ford, and pass on the continent.',rarity:'Common',value:'Set by the League, never negotiable',scarcity:45,danger:'Mild'},
++    {id:uid(),name:'Forgotten Names',description:'The true names of those wholly forgotten — raw material of the Hollow, and the most forbidden thing one can trade.',rarity:'Legendary',value:'Priceless, and damning to hold',scarcity:3,danger:'Catastrophic'},
++  ];
+   w.notes='The central tension of [[Aetheria]] is simple: in a world ruled by [[Mnemurgy]], to be remembered is to have power, and to be forgotten is to cease — to become one of [[The Hollow]].\n\nThe [[Pale Archive]] sits at the center of every web. They do not rule openly, yet [[Seraphine Vael]] decides who is remembered as a rightful heir and who is quietly let slip. When [[Kaelen Dross]] fell at [[The Last March on Veilmarch]], it was the Archive — not the League — who chose how he would be remembered, and therefore whether [[Mirae Dross]] would inherit at all.\n\nOPEN THREADS:\n- Does Seraphine truly remember a future life, or is it an Archive fabrication?\n- The recipe for [[Sunsteel]] — who outside Emberhold knows it?\n- The [[Bridgewright League]] funded the forges. What do they want in return that hasn\'t come due yet?';
++  w.journal=[
++    {id:uid(),title:'The Pale Seat',campaign:'The Sundering Saga',date:'2024-01-12',year:521,_t:Date.now(),body:'The session opened in the fog-streets of [[Veilmarch]], where the party sought an audience with [[Seraphine Vael]]. She received them in the lowest vault of [[The Pale Archive]], walled in by the bottled memories of the dead.\n\nSeraphine let slip that the rite of succession is not law but [[Mnemurgy]]: whoever the Archive chooses to remember as the rightful heir becomes so. The line of [[Kaelen Dross]], the party realized, hangs by a single thread of recollection.\n\nThey left with more questions than answers — and a warning that some memories, once recalled, cannot be put back.'},
++    {id:uid(),title:'Ash on the Wind',campaign:'The Sundering Saga',date:'2024-01-26',year:521,_t:Date.now()+1,body:'Word reached the party of armies massing at [[Emberhold]]. [[Kaelen Dross]] had emptied his forges, marching every blade of [[Sunsteel]] toward the fog to meet a rising tide of [[The Hollow]].\n\nWhat followed would be remembered as [[The Last March on Veilmarch]]. The party held the rear of the column as the Ashen King rode ahead into the mist — and did not ride back.\n\nIn the silence after, [[Mirae Dross]] stood to inherit a throne of ash, and the question of who would remember her as heir loomed larger than any army.'},
++  ];
+   return w;
+ }
+diff --git a/js/shell.js b/js/shell.js
+index dca1627..0264635 100644
+--- a/js/shell.js
++++ b/js/shell.js
+@@ -5,6 +5,7 @@ const NAV = [
+     {id:'graph', label:'Relations Web', icon:'graph'},
+     {id:'timeline', label:'Chronicle', icon:'timeline'},
+     {id:'map', label:'Cartography', icon:'map'},
++    {id:'journal', label:'Campaign Journal', icon:'book'},
+   ]},
+   {sec:'Codex', items:'TYPES'},   // expands to entity types
+   {sec:'Forge', items:[
+@@ -59,8 +60,8 @@ function renderSidebar(){
+     h+='</div>';
+   }
+   // total
+-  h+=`<div style="margin-top:auto;padding:16px 18px;border-top:1px solid var(--line-soft)">
+-    <div style="font-family:var(--mono);font-size:10px;color:var(--ink-faint);line-height:1.7">
++  h+=`<div style="margin-top:auto;padding:8px 18px;border-top:1px solid var(--line-soft)">
++    <div style="font-family:var(--mono);font-size:10px;color:var(--ink-faint);line-height:1.55">
+       ${DB.entities.length} entities<br>${DB.entities.filter(e=>e.canon==='canon').length} canon · ${countRels()} links
+     </div></div>`;
+   $('#sidebar').innerHTML=h;
+@@ -81,6 +82,7 @@ function renderView(){
+   else if(v==='graph') m.innerHTML=viewGraph();
+   else if(v==='timeline') m.innerHTML=viewTimeline();
+   else if(v==='map') m.innerHTML=viewMap();
++  else if(v==='journal') m.innerHTML=viewJournal();
+   else if(v==='systems') m.innerHTML=viewSystems();
+   else if(v==='consistency') m.innerHTML=viewConsistency();
+   else if(v==='notes') m.innerHTML=viewNotes();
+diff --git a/js/systems.js b/js/systems.js
+index 77be8cf..225b1fa 100644
+--- a/js/systems.js
++++ b/js/systems.js
+@@ -1,5 +1,8 @@
+ /* ========== MAP / CARTOGRAPHY ========== */
+-let mapState={placing:null};
++/* entity types that can be charted, and the carousel filter buttons */
++const MAP_PINNABLE = ['place','char','event','faction','spell'];
++const MAP_FILTERS = [['all','All'],['place','Places'],['char','Characters'],['event','Events'],['faction','Factions'],['spell','Spells']];
++let mapState={filter:'all'};
+ function viewMap(){
+   const pinned = DB.entities.filter(e=>e.map);
+   return `<div class="view active">
+@@ -12,24 +15,36 @@ function viewMap(){
+         ${DB.map.image?`<button class="btn danger" id="clearMap">Clear</button>`:''}
+       </div>
+     </div>
+-    <div class="map-tools" style="position:static;margin-bottom:12px;display:flex">
+-      <span class="muted" style="font-size:12.5px;align-self:center;margin-right:8px">Pin an entity:</span>
+-      <select id="pinSelect" style="width:auto;min-width:200px">
+-        <option value="">— choose a location/character/event —</option>
+-        ${DB.entities.filter(e=>['place','char','event'].includes(e.type)&&!e.map).map(e=>`<option value="${e.id}">${esc(TYPES[e.type].name)}: ${esc(e.name)}</option>`).join('')}
+-      </select>
+-      <button class="btn sm amber" id="startPin" style="margin-left:8px">Place on map →</button>
+-    </div>
+     <div class="map-stage" id="mapStage">
+       <div id="mapCanvas"></div>
+       ${pinned.map(e=>mapPin(e)).join('')}
+       ${!DB.map.image?`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;color:var(--ink-faint);text-align:center;padding:30px;pointer-events:none">
+         ${I.map}<div style="font-family:var(--serif);font-size:21px;color:var(--ink-dim);margin:12px 0 6px">No map image yet</div>
+-        <p>Upload a map of your world, then pin locations onto it.<br>Or pin onto the blank canvas to sketch spatial relationships.</p></div>`:''}
+-      <div class="map-hint" id="mapHint">${mapState.placing?`Click anywhere to place <b>${esc(ent(mapState.placing)?.name||'')}</b>`:'Drag pins to reposition · click a pin to inspect'}</div>
+-    </div>`+(DB.map.image?'':'')+`
++        <p>Upload a map of your world, then drag entities from the tray below onto it.<br>Or drop them on the blank canvas to sketch spatial relationships.</p></div>`:''}
++      <div class="map-hint" id="mapHint">Drag an entity from the tray onto the map · drag a pin to move it · click a pin to inspect</div>
++    </div>
++    ${mapCarousel()}
+   </div>`;
+ }
++/* the bottom tray: type-filter pills + a horizontal strip of draggable entity chips */
++function mapCarousel(){
++  return `<div class="map-carousel" id="mapCarousel">
++    <div class="map-carousel-filters">
++      ${MAP_FILTERS.map(([k,label])=>`<button class="map-filter-pill ${mapState.filter===k?'on':''}" data-mapfilter="${k}">${esc(label)}</button>`).join('')}
++    </div>
++    <div class="map-carousel-track" id="carouselTrack">${mapChips()}</div>
++  </div>`;
++}
++function mapChips(){
++  const f=mapState.filter;
++  const list=DB.entities.filter(e=>MAP_PINNABLE.includes(e.type) && (f==='all'||e.type===f));
++  if(!list.length) return `<div class="map-carousel-empty">Nothing to chart yet — create some ${f==='all'?'places, characters, events, factions, or spells':TYPES[f].plural.toLowerCase()} first.</div>`;
++  return list.map(e=>`<div class="map-chip${e.map?' pinned':''}" draggable="true" data-chip="${e.id}" title="${e.map?'Already on the map — drag to move it':'Drag onto the map to place it'}">
++    <span class="mc-ico" style="color:${TYPES[e.type].color}">${I[TYPES[e.type].icon]}</span>
++    <span class="mc-name">${esc(e.name)}</span>
++    ${e.map?`<span class="mc-badge">${I.check}</span>`:''}
++  </div>`).join('');
++}
+ function mapPin(e){
+   const c=TYPES[e.type].color;
+   return `<div class="map-pin" data-pin="${e.id}" style="left:${e.map.x}%;top:${e.map.y}%">
+@@ -46,28 +61,63 @@ function initMap(){
+   if($('#clearMap')) $('#clearMap').onclick=()=>{ DB.map.image=null; renderView(); };
+   if($('[data-mapname]')) $('[data-mapname]').onclick=()=>{ const n=prompt('Map name:',DB.map.name); if(n){DB.map.name=n;renderView();} };
+ 
+-  $('#startPin').onclick=()=>{ const id=$('#pinSelect').value; if(!guard(id,'Choose a location, character, or event to place first.','warn'))return; mapState.placing=id; $('#mapHint').innerHTML=`Click anywhere to place <b>${esc(ent(id).name)}</b>`; stage.style.cursor='crosshair'; notify(`Click the map to place ${ent(id).name}.`, 'info', {ttl:2200}); };
+-
+-  stage.onclick=ev=>{
+-    if(!mapState.placing) return;
+-    if(ev.target.closest('.map-pin')) return;
++  // drop target: dragging an entity chip onto the stage pins it — or moves it if already pinned.
++  // The dragged id travels via dataTransfer, not a module variable.
++  stage.addEventListener('dragover', ev=>{ ev.preventDefault(); ev.dataTransfer.dropEffect='copy'; stage.classList.add('drag-over'); });
++  stage.addEventListener('dragleave', ev=>{ if(!stage.contains(ev.relatedTarget)) stage.classList.remove('drag-over'); });
++  stage.addEventListener('drop', ev=>{
++    ev.preventDefault(); stage.classList.remove('drag-over');
++    const id=ev.dataTransfer.getData('text/plain'); const e=ent(id); if(!e) return;
+     const r=stage.getBoundingClientRect();
+-    const x=((ev.clientX-r.left)/r.width*100), y=((ev.clientY-r.top)/r.height*100);
+-    const e=ent(mapState.placing); e.map={x,y}; e._t=Date.now(); mapState.placing=null; stage.style.cursor=''; renderView(); toast('Pinned '+e.name);
+-  };
+-  // pins: click + drag
++    let x=(ev.clientX-r.left)/r.width*100, y=(ev.clientY-r.top)/r.height*100;
++    x=Math.max(0,Math.min(100,x)); y=Math.max(0,Math.min(100,y));
++    const wasPinned=!!e.map;
++    e.map={x,y}; e._t=Date.now(); renderView();
++    notify(wasPinned?`Moved ${e.name} on the map.`:`Pinned ${e.name} to the map.`, 'success');
++  });
++
++  // carousel: draggable chips + type-filter pills
++  wireMapChips();
++  $$('[data-mapfilter]').forEach(b=>b.onclick=()=>{ mapState.filter=b.dataset.mapfilter; renderMapCarousel(); });
++
++  // pins: mouse-drag to reposition, click to inspect. The move/up listeners are
++  // attached on mousedown and removed on mouseup, so nothing accumulates on
++  // window as the map re-renders.
+   $$('.map-pin',stage).forEach(pin=>{
+-    const id=pin.dataset.pin; let moved=false,dragging=false;
+-    pin.onmousedown=ev=>{ ev.stopPropagation(); dragging=true; moved=false; };
+-    const mv=ev=>{ if(!dragging)return; moved=true; const r=stage.getBoundingClientRect();
+-      let x=(ev.clientX-r.left)/r.width*100,y=(ev.clientY-r.top)/r.height*100;
+-      x=Math.max(0,Math.min(100,x));y=Math.max(0,Math.min(100,y));
+-      pin.style.left=x+'%';pin.style.top=y+'%'; ent(id).map={x,y}; };
+-    const up=()=>{ if(dragging){dragging=false; if(!moved) openEntity(id); ent(id)._t=Date.now();} };
+-    pin._mv=mv; pin._up=up;
+-    window.addEventListener('mousemove',mv); window.addEventListener('mouseup',up);
++    const id=pin.dataset.pin;
++    pin.onmousedown=ev=>{
++      ev.stopPropagation();
++      let moved=false;
++      const mv=e=>{ moved=true; const r=stage.getBoundingClientRect();
++        let x=(e.clientX-r.left)/r.width*100, y=(e.clientY-r.top)/r.height*100;
++        x=Math.max(0,Math.min(100,x)); y=Math.max(0,Math.min(100,y));
++        pin.style.left=x+'%'; pin.style.top=y+'%'; const en=ent(id); if(en) en.map={x,y}; };
++      const up=()=>{
++        window.removeEventListener('mousemove',mv);
++        window.removeEventListener('mouseup',up);
++        if(!moved) openEntity(id);
++        const en=ent(id); if(en) en._t=Date.now();
++      };
++      window.addEventListener('mousemove',mv);
++      window.addEventListener('mouseup',up);
++    };
+   });
+ }
++/* (re)wire the carousel chips to the HTML5 drag API */
++function wireMapChips(){
++  const stage=$('#mapStage');
++  $$('#carouselTrack .map-chip').forEach(chip=>{
++    chip.addEventListener('dragstart', ev=>{ ev.dataTransfer.setData('text/plain', chip.dataset.chip); ev.dataTransfer.effectAllowed='copyMove'; chip.classList.add('dragging'); });
++    chip.addEventListener('dragend', ()=>{ chip.classList.remove('dragging'); stage&&stage.classList.remove('drag-over'); });
++  });
++}
++/* swap carousel contents when a filter pill is clicked (no full re-render) */
++function renderMapCarousel(){
++  const track=$('#carouselTrack'); if(!track) return;
++  $$('[data-mapfilter]').forEach(b=>b.classList.toggle('on', b.dataset.mapfilter===mapState.filter));
++  track.innerHTML=mapChips();
++  wireMapChips();
++}
+ function pickImage(cb){
+   const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+   inp.onchange=()=>{ const f=inp.files[0]; if(!f)return; const rd=new FileReader(); rd.onload=()=>cb(rd.result); rd.readAsDataURL(f); };
+@@ -75,6 +125,21 @@ function pickImage(cb){
+ }
+ 
+ /* ========== LIVING SYSTEMS ========== */
++/* resource vocabulary + back-compat helpers (reused by exporters) */
++const RARITY = [
++  {name:'Abundant',  scarcity:90},
++  {name:'Common',    scarcity:60},
++  {name:'Scarce',    scarcity:35},
++  {name:'Rare',      scarcity:12},
++  {name:'Legendary', scarcity:4},
++];
++const DANGER = ['None','Mild','Significant','Severe','Catastrophic'];
++function scarcityFromRarity(name){ const b=RARITY.find(r=>r.name===name); return b?b.scarcity:35; }
++function rarityFromScarcity(s){ s=+s; if(s>70)return'Abundant'; if(s>45)return'Common'; if(s>25)return'Scarce'; if(s>8)return'Rare'; return'Legendary'; }
++/* an older saved world only has {name,scarcity} — derive the new fields on read */
++function econRarity(r){ return r.rarity || rarityFromScarcity(r.scarcity!=null?r.scarcity:35); }
++function econScarcity(r){ return r.scarcity!=null ? r.scarcity : scarcityFromRarity(econRarity(r)); }
++
+ function viewSystems(){
+   const langs=DB.entities.filter(e=>e.type==='language');
+   const chars=DB.entities.filter(e=>e.type==='char');
+@@ -88,9 +153,7 @@ function viewSystems(){
+       <h3>${I.systems} Economy & Resources</h3>
+       <div class="panel-sub">What's scarce, what's abundant, what's traded. Scarcity drives conflict and value.</div>
+       <div id="econList">${DB.economy.length? DB.economy.map(econRow).join('') : '<p class="muted">No resources tracked. Add what your world trades and covets.</p>'}</div>
+-      <div class="flex gap mt wrap">
+-        <input id="econName" placeholder="Resource (e.g. Sunsteel, Spice, Fresh water)" style="flex:2;min-width:180px">
+-        <select id="econScarcity" style="flex:1;min-width:120px"><option value="90">Abundant</option><option value="60">Common</option><option value="35" selected>Scarce</option><option value="12">Rare</option><option value="4">Legendary</option></select>
++      <div class="flex gap mt">
+         <button class="btn amber" id="addEcon">${I.plus} Add Resource</button>
+       </div>
+     </div>
+@@ -134,13 +197,80 @@ function viewSystems(){
+   </div>`;
+ }
+ function econRow(r){
+-  return `<div class="econ-row" data-econ="${r.id}">
+-    <span style="width:150px;font-size:14px;color:var(--ink)">${esc(r.name)}</span>
+-    <div class="econ-bar"><div style="width:${r.scarcity}%"></div></div>
+-    <span class="econ-val">${r.scarcity>70?'plentiful':r.scarcity>45?'common':r.scarcity>25?'scarce':r.scarcity>8?'rare':'legendary'}</span>
+-    <span class="rel-x" data-delecon="${r.id}" style="cursor:pointer">${I.x}</span>
++  const rarity=econRarity(r), scar=econScarcity(r);
++  const dgr=(r.danger&&r.danger!=='None')
++    ? `<span class="econ-danger d-${esc(r.danger.toLowerCase())}">${esc(r.danger)}</span>` : '';
++  return `<div class="econ-row" data-econ="${r.id}" style="cursor:pointer"${r.description?` title="${esc(r.description)}"`:''}>
++    <span style="width:150px;font-size:14px;color:var(--ink);flex-shrink:0">${esc(r.name)}</span>
++    <div class="econ-bar"><div style="width:${scar}%"></div></div>
++    ${dgr}
++    <span class="econ-val">${esc(rarity)}</span>
+   </div>`;
+ }
++
++/* Add / edit a resource. No id = add mode; an id opens edit mode (pre-filled,
++   Save updates, plus a Delete). Mirrors openCalendarModal's modal pattern. */
++function openResourceModal(id){
++  const editing=!!id;
++  const r=editing ? DB.economy.find(x=>x.id===id) : null;
++  if(editing && !r) return notify('That resource is no longer tracked.', 'error');
++  const rarity0=editing ? econRarity(r) : 'Scarce';
++  const scar0=editing ? econScarcity(r) : scarcityFromRarity(rarity0);
++  const danger0=(r && r.danger) || 'None';
++  const ov=$('#modalOverlay');
++  ov.innerHTML=`<div class="modal"><div class="modal-head"><h3>${I.systems} ${editing?'Edit Resource':'Add Resource'}</h3><button class="close" data-mclose>${I.x}</button></div>
++    <div class="modal-body">
++      <label>Name</label>
++      <input id="resName" value="${esc(r?r.name:'')}" placeholder="Sunsteel, Spice, Fresh water…" autocomplete="off">
++      <label>Description</label>
++      <textarea id="resDesc" placeholder="What is it, and why does it matter?">${esc(r?(r.description||''):'')}</textarea>
++      <div class="two-col">
++        <div><label>Rarity</label><select id="resRarity">${RARITY.map(b=>`<option value="${b.name}" ${b.name===rarity0?'selected':''}>${b.name}</option>`).join('')}</select></div>
++        <div><label>Abundance (0–100)</label><input id="resScar" type="number" min="0" max="100" value="${scar0}" placeholder="—"></div>
++      </div>
++      <div class="two-col">
++        <div><label>Value / price</label><input id="resValue" value="${esc(r?(r.value||''):'')}" placeholder="3 gold pieces, priceless…" autocomplete="off"></div>
++        <div><label>Danger level</label><select id="resDanger">${DANGER.map(d=>`<option value="${d}" ${d===danger0?'selected':''}>${d}</option>`).join('')}</select></div>
++      </div>
++    </div>
++    <div class="modal-foot">
++      ${editing?`<button class="btn danger" id="resDelete" style="margin-right:auto">${I.trash} Delete</button>`:''}
++      <button class="btn" data-mclose>Cancel</button>
++      <button class="btn amber" id="resSave">${editing?'Save Changes':'Add Resource'}</button>
++    </div></div>`;
++  ov.classList.add('open');
++
++  // abundance auto-follows rarity until the user sets it (and never clobbers an existing value)
++  let scarTouched = editing && r.scarcity!=null;
++  $('#resScar',ov).oninput=()=>{ scarTouched=true; };
++  $('#resRarity',ov).onchange=()=>{ if(!scarTouched) $('#resScar',ov).value=scarcityFromRarity($('#resRarity',ov).value); };
++
++  $$('[data-mclose]',ov).forEach(b=>b.onclick=closeModal);
++  ov.onclick=ev=>{ if(ev.target===ov) closeModal(); };
++
++  $('#resSave',ov).onclick=()=>{
++    const name=$('#resName',ov).value.trim();
++    if(!guard(name, 'Name the resource before saving it.', 'warn')) return;
++    const dupe=DB.economy.some(x=>x.name.toLowerCase()===name.toLowerCase() && x.id!==(r?r.id:null));
++    if(!guard(!dupe, `"${name}" is already tracked.`, 'warn')) return;
++    const rarity=$('#resRarity',ov).value;
++    const raw=$('#resScar',ov).value;
++    const scarcity = raw==='' ? scarcityFromRarity(rarity) : Math.max(0, Math.min(100, Math.round(+raw)||0));
++    const data={ name, description:$('#resDesc',ov).value.trim(), rarity, value:$('#resValue',ov).value.trim(), scarcity, danger:$('#resDanger',ov).value };
++    if(editing) Object.assign(r, data);
++    else DB.economy.push(Object.assign({id:uid()}, data));
++    closeModal(); renderView();
++    notify(editing?`Updated "${name}".`:`Added "${name}" to the economy.`, 'success');
++  };
++
++  if($('#resDelete',ov)) $('#resDelete',ov).onclick=()=>{
++    if(!confirm(`Delete resource "${r.name}"? This can't be undone.`)) return;
++    const nm=r.name; DB.economy=DB.economy.filter(x=>x.id!==r.id);
++    closeModal(); renderView(); notify(`Removed "${nm}".`, 'info');
++  };
++
++  setTimeout(()=>{ const n=$('#resName',ov); n&&n.focus(); }, 40);
++}
+ function buildGenealogy(chars){
+   if(chars.length<2) return '<p class="muted">Add characters and link them with "parent of" / "child of" to grow family trees.</p>';
+   // find roots (no parent within set)
+diff --git a/js/timeline.js b/js/timeline.js
+index f692fbd..8dd4cdd 100644
+--- a/js/timeline.js
++++ b/js/timeline.js
+@@ -19,7 +19,7 @@ function viewTimeline(){
+     const orphans = pts.filter(p=>!eras.some(e=>p.year>=e.start&&p.year<e.end));
+     body=`<div class="tl-wrap"><div class="tl-axis">`;
+     grouped.forEach(g=>{
+-      body+=`<div class="era-band"><div class="era-head"><div class="era-bar" style="color:${g.era.color}">${esc(g.era.name)}<div class="era-years">${g.era.start}–${g.era.end} ${esc(DB.calendar.epoch)}</div></div></div>`;
++      body+=`<div class="era-band"><div class="era-head" data-eraedit="${g.era.id}" title="Click to edit this era"><div class="era-bar" style="color:${g.era.color}">${esc(g.era.name)}<div class="era-years">${g.era.start}–${g.era.end} ${esc(DB.calendar.epoch)}</div></div><span class="era-edit-hint">${I.edit}</span></div>`;
+       if(!g.items.length) body+=`<div class="tl-event"><div class="tl-date"></div><div class="tl-node" style="background:${g.era.color}"></div><div class="tl-card" style="opacity:.5"><p class="muted">— quiet years —</p></div></div>`;
+       g.items.forEach(p=>body+=tlEvent(p,g.era.color));
+       body+='</div>';
+@@ -57,7 +57,7 @@ function tlEvent(p,color){
+ }
+ 
+ /* calendar editor */
+-function openCalendarModal(){
++function openCalendarModal(focusEraId){
+   const c=DB.calendar; const ov=$('#modalOverlay');
+   ov.innerHTML=`<div class="modal wide"><div class="modal-head"><h3>${I.timeline} Calendar & Eras</h3><button class="close" data-mclose>${I.x}</button></div>
+   <div class="modal-body">
+@@ -78,6 +78,18 @@ function openCalendarModal(){
+   function refreshEra(){ $('#eraEdit',ov).innerHTML=c.eras.map((e,i)=>eraRow(e,i)).join(''); wire(); }
+   $('#addEra',ov).onclick=()=>{ c.eras.push({id:uid(),name:'New Age',start:0,end:100,color:'#6b8a9a'}); refreshEra(); notify('Era added — set its years and name.', 'success'); };
+   wire();
++  // If asked to focus a specific era, scroll its row into view and briefly highlight it.
++  if(focusEraId){
++    setTimeout(()=>{
++      const row=$(`[data-eraid="${focusEraId}"]`,ov);
++      if(!row) return;
++      row.scrollIntoView({behavior:'smooth',block:'center'});
++      row.classList.add('era-focus-flash');
++      const nameInput=row.querySelector('[data-en]');
++      if(nameInput){ nameInput.focus(); nameInput.select(); }
++      setTimeout(()=>row.classList.remove('era-focus-flash'), 1800);
++    }, 60);
++  }
+   $$('[data-mclose]',ov).forEach(b=>b.onclick=closeModal);
+   $('#saveCal',ov).onclick=()=>{
+     const months=$('#calMonths').value.split(',').map(s=>s.trim()).filter(Boolean);
+@@ -103,7 +115,7 @@ function openCalendarModal(){
+   ov.onclick=ev=>{if(ev.target===ov)closeModal();};
+ }
+ function eraRow(e,i){
+-  return `<div class="era-row-edit flex gap aic" style="margin-bottom:8px">
++  return `<div class="era-row-edit flex gap aic" data-eraid="${e.id}" style="margin-bottom:8px">
+     <input data-en value="${esc(e.name)}" style="flex:2" placeholder="Era name">
+     <input data-es type="number" value="${e.start}" style="flex:1" placeholder="start">
+     <input data-ee type="number" value="${e.end}" style="flex:1" placeholder="end">
+diff --git a/js/wiring.js b/js/wiring.js
+index bf6a0ef..4b29535 100644
+--- a/js/wiring.js
++++ b/js/wiring.js
+@@ -60,17 +60,16 @@ function wireView(){
+   $$('#graphFilter [data-gf]',m).forEach(b=>b.onclick=()=>{UI.graphView=b.dataset.gf;renderView();});
+ 
+   // timeline
+-  if($('[data-editcal]')) $('[data-editcal]').onclick=openCalendarModal;
++  if($('[data-editcal]')) $('[data-editcal]').onclick=()=>openCalendarModal();
++  $$('[data-eraedit]',m).forEach(el=>el.onclick=()=>openCalendarModal(el.dataset.eraedit));
+ 
+-  // systems econ
+-  if($('#addEcon')) $('#addEcon').onclick=()=>{
+-    const name=$('#econName').value.trim();
+-    if(!guard(name, 'Name the resource before adding it.', 'warn')) return;
+-    if(DB.economy.some(r=>r.name.toLowerCase()===name.toLowerCase())) return notify(`"${name}" is already tracked.`, 'warn');
+-    DB.economy.push({id:uid(),name,scarcity:+$('#econScarcity').value}); renderView();
+-    notify(`Added resource "${name}".`, 'success');
+-  };
+-  $$('[data-delecon]',m).forEach(x=>x.onclick=()=>{ const r=DB.economy.find(r=>r.id===x.dataset.delecon); DB.economy=DB.economy.filter(r=>r.id!==x.dataset.delecon); renderView(); notify(`Removed "${r?r.name:'resource'}".`, 'info'); });
++  // systems econ — modal-based add/edit (click a row to edit, button to add)
++  if($('#addEcon')) $('#addEcon').onclick=()=>openResourceModal();
++  $$('[data-econ]',m).forEach(row=>row.onclick=()=>openResourceModal(row.dataset.econ));
++
++  // campaign journal — card opens read-only preview; "New Session" opens the editor
++  $$('[data-newsession]',m).forEach(b=>b.onclick=()=>openSessionEditor());
++  $$('[data-session]',m).forEach(card=>card.onclick=()=>openSessionPreview(card.dataset.session));
+ }
+ // targeted re-render of codex grid to preserve search focus
+ function renderCodexGrid(){
