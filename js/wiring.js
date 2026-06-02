@@ -65,6 +65,10 @@ function wireView(){
   // systems econ — modal-based add/edit (click a row to edit, button to add)
   if($('#addEcon')) $('#addEcon').onclick=()=>openResourceModal();
   $$('[data-econ]',m).forEach(row=>row.onclick=()=>openResourceModal(row.dataset.econ));
+
+  // campaign journal — card opens read-only preview; "New Session" opens the editor
+  $$('[data-newsession]',m).forEach(b=>b.onclick=()=>openSessionEditor());
+  $$('[data-session]',m).forEach(card=>card.onclick=()=>openSessionPreview(card.dataset.session));
 }
 // targeted re-render of codex grid to preserve search focus
 function renderCodexGrid(){

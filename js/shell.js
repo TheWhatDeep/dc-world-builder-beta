@@ -5,6 +5,7 @@ const NAV = [
     {id:'graph', label:'Relations Web', icon:'graph'},
     {id:'timeline', label:'Chronicle', icon:'timeline'},
     {id:'map', label:'Cartography', icon:'map'},
+    {id:'journal', label:'Campaign Journal', icon:'book'},
   ]},
   {sec:'Codex', items:'TYPES'},   // expands to entity types
   {sec:'Forge', items:[
@@ -81,6 +82,7 @@ function renderView(){
   else if(v==='graph') m.innerHTML=viewGraph();
   else if(v==='timeline') m.innerHTML=viewTimeline();
   else if(v==='map') m.innerHTML=viewMap();
+  else if(v==='journal') m.innerHTML=viewJournal();
   else if(v==='systems') m.innerHTML=viewSystems();
   else if(v==='consistency') m.innerHTML=viewConsistency();
   else if(v==='notes') m.innerHTML=viewNotes();
