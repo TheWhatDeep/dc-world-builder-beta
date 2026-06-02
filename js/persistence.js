@@ -131,7 +131,13 @@ function exportTXT(scope){
     });
   });
   // economy
-  if(DB.economy.length){ out.push('','█ ECONOMY & RESOURCES','═'.repeat(40)); DB.economy.forEach(r=>out.push('  • '+r.name+' — '+(r.scarcity>45?'common':r.scarcity>25?'scarce':'rare'))); }
+  if(DB.economy.length){ out.push('','█ ECONOMY & RESOURCES','═'.repeat(40)); DB.economy.forEach(r=>{
+    const bits=[econRarity(r)];
+    if(r.danger&&r.danger!=='None') bits.push(r.danger+' danger');
+    if(r.value) bits.push(r.value);
+    out.push('  • '+r.name+' — '+bits.join(' · '));
+    if(r.description) out.push('      '+r.description.replace(/\n/g,'\n      '));
+  }); }
   // notes
   if(DB.notes && scope!=='player'){ out.push('','█ LOREMASTER NOTES','═'.repeat(40),DB.notes); }
   download(slug(DB.meta.name)+'.txt', out.join('\n'));

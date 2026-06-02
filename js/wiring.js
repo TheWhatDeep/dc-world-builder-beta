@@ -62,15 +62,9 @@ function wireView(){
   // timeline
   if($('[data-editcal]')) $('[data-editcal]').onclick=openCalendarModal;
 
-  // systems econ
-  if($('#addEcon')) $('#addEcon').onclick=()=>{
-    const name=$('#econName').value.trim();
-    if(!guard(name, 'Name the resource before adding it.', 'warn')) return;
-    if(DB.economy.some(r=>r.name.toLowerCase()===name.toLowerCase())) return notify(`"${name}" is already tracked.`, 'warn');
-    DB.economy.push({id:uid(),name,scarcity:+$('#econScarcity').value}); renderView();
-    notify(`Added resource "${name}".`, 'success');
-  };
-  $$('[data-delecon]',m).forEach(x=>x.onclick=()=>{ const r=DB.economy.find(r=>r.id===x.dataset.delecon); DB.economy=DB.economy.filter(r=>r.id!==x.dataset.delecon); renderView(); notify(`Removed "${r?r.name:'resource'}".`, 'info'); });
+  // systems econ — modal-based add/edit (click a row to edit, button to add)
+  if($('#addEcon')) $('#addEcon').onclick=()=>openResourceModal();
+  $$('[data-econ]',m).forEach(row=>row.onclick=()=>openResourceModal(row.dataset.econ));
 }
 // targeted re-render of codex grid to preserve search focus
 function renderCodexGrid(){

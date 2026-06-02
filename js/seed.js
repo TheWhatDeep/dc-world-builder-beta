@@ -43,7 +43,13 @@ function seedDemo(){
   R(veil,'associated with',magic); R(mira,'child of',kael);
   R(sera,'created',recall); R(recall,'associated with',magic);
 
-  w.economy=[{id:uid(),name:'Sunsteel',scarcity:8},{id:uid(),name:'Bottled Memory',scarcity:30},{id:uid(),name:'Fogwheat',scarcity:62},{id:uid(),name:'Bridge-tolls',scarcity:45},{id:uid(),name:'Forgotten Names',scarcity:4}];
+  w.economy=[
+    {id:uid(),name:'Sunsteel',description:'A radiant alloy forged only in Emberhold\'s volcanic heart — the one substance that can wound the Hollow. Its recipe is a guarded state secret.',rarity:'Legendary',value:'A king\'s ransom by the ingot',scarcity:6,danger:'Significant'},
+    {id:uid(),name:'Bottled Memory',description:'Recollections drawn from the living or the dead and sealed in glass, traded openly in Veilmarch. The Archive sets the going rate.',rarity:'Rare',value:'10–500 marks, by vintage',scarcity:24,danger:'Severe'},
+    {id:uid(),name:'Fogwheat',description:'A pale grain that thrives in the perpetual mist of the fog-cities. The staple loaf of the Veilborn.',rarity:'Common',value:'A few coppers a bushel',scarcity:62,danger:'None'},
+    {id:uid(),name:'Bridge-tolls',description:'Not a good but a stranglehold: the Bridgewright League taxes every crossing, ford, and pass on the continent.',rarity:'Common',value:'Set by the League, never negotiable',scarcity:45,danger:'Mild'},
+    {id:uid(),name:'Forgotten Names',description:'The true names of those wholly forgotten — raw material of the Hollow, and the most forbidden thing one can trade.',rarity:'Legendary',value:'Priceless, and damning to hold',scarcity:3,danger:'Catastrophic'},
+  ];
   w.notes='The central tension of [[Aetheria]] is simple: in a world ruled by [[Mnemurgy]], to be remembered is to have power, and to be forgotten is to cease — to become one of [[The Hollow]].\n\nThe [[Pale Archive]] sits at the center of every web. They do not rule openly, yet [[Seraphine Vael]] decides who is remembered as a rightful heir and who is quietly let slip. When [[Kaelen Dross]] fell at [[The Last March on Veilmarch]], it was the Archive — not the League — who chose how he would be remembered, and therefore whether [[Mirae Dross]] would inherit at all.\n\nOPEN THREADS:\n- Does Seraphine truly remember a future life, or is it an Archive fabrication?\n- The recipe for [[Sunsteel]] — who outside Emberhold knows it?\n- The [[Bridgewright League]] funded the forges. What do they want in return that hasn\'t come due yet?';
   return w;
 }

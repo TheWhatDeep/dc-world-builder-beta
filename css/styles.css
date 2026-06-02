@@ -297,9 +297,15 @@ span[style*="inline-flex"]>svg{width:100%;height:100%;display:block}
 .gen-node .gn-name:hover{color:var(--amber)}
 
 .econ-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line-soft)}
+.econ-row:hover{background:var(--bg-hover)}
 .econ-bar{flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden}
 .econ-bar div{height:100%;background:linear-gradient(90deg,var(--amber-deep),var(--amber));border-radius:4px}
-.econ-row .econ-val{font-family:var(--mono);font-size:11px;color:var(--ink-dim);width:46px;text-align:right}
+.econ-row .econ-val{font-family:var(--mono);font-size:11px;color:var(--ink-dim);width:66px;text-align:right;white-space:nowrap;flex-shrink:0}
+.econ-danger{padding:2px 9px;border-radius:20px;font-size:10px;font-family:var(--mono);letter-spacing:.04em;border:1px solid;white-space:nowrap;flex-shrink:0}
+.econ-danger.d-mild{color:var(--amber);border-color:rgba(217,164,65,.45);background:rgba(217,164,65,.1)}
+.econ-danger.d-significant{color:var(--rust);border-color:rgba(187,107,61,.5);background:rgba(187,107,61,.12)}
+.econ-danger.d-severe{color:var(--crimson);border-color:rgba(192,88,79,.55);background:rgba(192,88,79,.14)}
+.econ-danger.d-catastrophic{color:#f3e6df;border-color:var(--crimson);background:rgba(192,88,79,.42)}
 
 /* generator output */
 .gen-out{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}

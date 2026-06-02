@@ -75,6 +75,21 @@ function pickImage(cb){
 }
 
 /* ========== LIVING SYSTEMS ========== */
+/* resource vocabulary + back-compat helpers (reused by exporters) */
+const RARITY = [
+  {name:'Abundant',  scarcity:90},
+  {name:'Common',    scarcity:60},
+  {name:'Scarce',    scarcity:35},
+  {name:'Rare',      scarcity:12},
+  {name:'Legendary', scarcity:4},
+];
+const DANGER = ['None','Mild','Significant','Severe','Catastrophic'];
+function scarcityFromRarity(name){ const b=RARITY.find(r=>r.name===name); return b?b.scarcity:35; }
+function rarityFromScarcity(s){ s=+s; if(s>70)return'Abundant'; if(s>45)return'Common'; if(s>25)return'Scarce'; if(s>8)return'Rare'; return'Legendary'; }
+/* an older saved world only has {name,scarcity} — derive the new fields on read */
+function econRarity(r){ return r.rarity || rarityFromScarcity(r.scarcity!=null?r.scarcity:35); }
+function econScarcity(r){ return r.scarcity!=null ? r.scarcity : scarcityFromRarity(econRarity(r)); }
+
 function viewSystems(){
   const langs=DB.entities.filter(e=>e.type==='language');
   const chars=DB.entities.filter(e=>e.type==='char');
@@ -88,9 +103,7 @@ function viewSystems(){
       <h3>${I.systems} Economy & Resources</h3>
       <div class="panel-sub">What's scarce, what's abundant, what's traded. Scarcity drives conflict and value.</div>
       <div id="econList">${DB.economy.length? DB.economy.map(econRow).join('') : '<p class="muted">No resources tracked. Add what your world trades and covets.</p>'}</div>
-      <div class="flex gap mt wrap">
-        <input id="econName" placeholder="Resource (e.g. Sunsteel, Spice, Fresh water)" style="flex:2;min-width:180px">
-        <select id="econScarcity" style="flex:1;min-width:120px"><option value="90">Abundant</option><option value="60">Common</option><option value="35" selected>Scarce</option><option value="12">Rare</option><option value="4">Legendary</option></select>
+      <div class="flex gap mt">
         <button class="btn amber" id="addEcon">${I.plus} Add Resource</button>
       </div>
     </div>
@@ -134,12 +147,79 @@ function viewSystems(){
   </div>`;
 }
 function econRow(r){
-  return `<div class="econ-row" data-econ="${r.id}">
-    <span style="width:150px;font-size:14px;color:var(--ink)">${esc(r.name)}</span>
-    <div class="econ-bar"><div style="width:${r.scarcity}%"></div></div>
-    <span class="econ-val">${r.scarcity>70?'plentiful':r.scarcity>45?'common':r.scarcity>25?'scarce':r.scarcity>8?'rare':'legendary'}</span>
-    <span class="rel-x" data-delecon="${r.id}" style="cursor:pointer">${I.x}</span>
+  const rarity=econRarity(r), scar=econScarcity(r);
+  const dgr=(r.danger&&r.danger!=='None')
+    ? `<span class="econ-danger d-${esc(r.danger.toLowerCase())}">${esc(r.danger)}</span>` : '';
+  return `<div class="econ-row" data-econ="${r.id}" style="cursor:pointer"${r.description?` title="${esc(r.description)}"`:''}>
+    <span style="width:150px;font-size:14px;color:var(--ink);flex-shrink:0">${esc(r.name)}</span>
+    <div class="econ-bar"><div style="width:${scar}%"></div></div>
+    ${dgr}
+    <span class="econ-val">${esc(rarity)}</span>
   </div>`;
+}
+
+/* Add / edit a resource. No id = add mode; an id opens edit mode (pre-filled,
+   Save updates, plus a Delete). Mirrors openCalendarModal's modal pattern. */
+function openResourceModal(id){
+  const editing=!!id;
+  const r=editing ? DB.economy.find(x=>x.id===id) : null;
+  if(editing && !r) return notify('That resource is no longer tracked.', 'error');
+  const rarity0=editing ? econRarity(r) : 'Scarce';
+  const scar0=editing ? econScarcity(r) : scarcityFromRarity(rarity0);
+  const danger0=(r && r.danger) || 'None';
+  const ov=$('#modalOverlay');
+  ov.innerHTML=`<div class="modal"><div class="modal-head"><h3>${I.systems} ${editing?'Edit Resource':'Add Resource'}</h3><button class="close" data-mclose>${I.x}</button></div>
+    <div class="modal-body">
+      <label>Name</label>
+      <input id="resName" value="${esc(r?r.name:'')}" placeholder="Sunsteel, Spice, Fresh water…" autocomplete="off">
+      <label>Description</label>
+      <textarea id="resDesc" placeholder="What is it, and why does it matter?">${esc(r?(r.description||''):'')}</textarea>
+      <div class="two-col">
+        <div><label>Rarity</label><select id="resRarity">${RARITY.map(b=>`<option value="${b.name}" ${b.name===rarity0?'selected':''}>${b.name}</option>`).join('')}</select></div>
+        <div><label>Abundance (0–100)</label><input id="resScar" type="number" min="0" max="100" value="${scar0}" placeholder="—"></div>
+      </div>
+      <div class="two-col">
+        <div><label>Value / price</label><input id="resValue" value="${esc(r?(r.value||''):'')}" placeholder="3 gold pieces, priceless…" autocomplete="off"></div>
+        <div><label>Danger level</label><select id="resDanger">${DANGER.map(d=>`<option value="${d}" ${d===danger0?'selected':''}>${d}</option>`).join('')}</select></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      ${editing?`<button class="btn danger" id="resDelete" style="margin-right:auto">${I.trash} Delete</button>`:''}
+      <button class="btn" data-mclose>Cancel</button>
+      <button class="btn amber" id="resSave">${editing?'Save Changes':'Add Resource'}</button>
+    </div></div>`;
+  ov.classList.add('open');
+
+  // abundance auto-follows rarity until the user sets it (and never clobbers an existing value)
+  let scarTouched = editing && r.scarcity!=null;
+  $('#resScar',ov).oninput=()=>{ scarTouched=true; };
+  $('#resRarity',ov).onchange=()=>{ if(!scarTouched) $('#resScar',ov).value=scarcityFromRarity($('#resRarity',ov).value); };
+
+  $$('[data-mclose]',ov).forEach(b=>b.onclick=closeModal);
+  ov.onclick=ev=>{ if(ev.target===ov) closeModal(); };
+
+  $('#resSave',ov).onclick=()=>{
+    const name=$('#resName',ov).value.trim();
+    if(!guard(name, 'Name the resource before saving it.', 'warn')) return;
+    const dupe=DB.economy.some(x=>x.name.toLowerCase()===name.toLowerCase() && x.id!==(r?r.id:null));
+    if(!guard(!dupe, `"${name}" is already tracked.`, 'warn')) return;
+    const rarity=$('#resRarity',ov).value;
+    const raw=$('#resScar',ov).value;
+    const scarcity = raw==='' ? scarcityFromRarity(rarity) : Math.max(0, Math.min(100, Math.round(+raw)||0));
+    const data={ name, description:$('#resDesc',ov).value.trim(), rarity, value:$('#resValue',ov).value.trim(), scarcity, danger:$('#resDanger',ov).value };
+    if(editing) Object.assign(r, data);
+    else DB.economy.push(Object.assign({id:uid()}, data));
+    closeModal(); renderView();
+    notify(editing?`Updated "${name}".`:`Added "${name}" to the economy.`, 'success');
+  };
+
+  if($('#resDelete',ov)) $('#resDelete',ov).onclick=()=>{
+    if(!confirm(`Delete resource "${r.name}"? This can't be undone.`)) return;
+    const nm=r.name; DB.economy=DB.economy.filter(x=>x.id!==r.id);
+    closeModal(); renderView(); notify(`Removed "${nm}".`, 'info');
+  };
+
+  setTimeout(()=>{ const n=$('#resName',ov); n&&n.focus(); }, 40);
 }
 function buildGenealogy(chars){
   if(chars.length<2) return '<p class="muted">Add characters and link them with "parent of" / "child of" to grow family trees.</p>';

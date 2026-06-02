@@ -52,7 +52,12 @@ function buildDocBody(scope){
   else h+=`<p><em>No dated events recorded.</em></p>`;
   h+=`</section>`;
   // economy
-  if(DB.economy.length){ h+=`<section class="doc-sec" id="sec-econ"><h2>Economy & Resources</h2><div class="econ-grid">`+DB.economy.map(r=>`<div class="econ-item"><strong>${esc(r.name)}</strong><span class="econ-tag">${r.scarcity>70?'plentiful':r.scarcity>45?'common':r.scarcity>25?'scarce':r.scarcity>8?'rare':'legendary'}</span></div>`).join('')+`</div></section>`; }
+  if(DB.economy.length){ h+=`<section class="doc-sec" id="sec-econ"><h2>Economy & Resources</h2><div class="econ-grid">`+DB.economy.map(r=>{
+    const danger=(r.danger&&r.danger!=='None')?`<span class="econ-tag danger">${esc(r.danger)} danger</span>`:'';
+    const val=r.value?`<div class="econ-val-line">${esc(r.value)}</div>`:'';
+    const desc=r.description?`<div class="econ-desc">${esc(r.description)}</div>`:'';
+    return `<div class="econ-item"><div class="econ-item-head"><strong>${esc(r.name)}</strong><span class="econ-tags"><span class="econ-tag">${esc(econRarity(r))}</span>${danger}</span></div>${val}${desc}</div>`;
+  }).join('')+`</div></section>`; }
   // notes
   if(DB.notes&&scope!=='player'){ const linked=DB.notes.replace(/\[\[([^\]]+)\]\]/g,(m,name)=>{const e=DB.entities.find(x=>x.name.toLowerCase()===name.toLowerCase());return e&&ents.includes(e)?`<a href="#${anchor(e.id)}" class="xref">${esc(name)}</a>`:esc(name);});
     h+=`<section class="doc-sec" id="sec-notes"><h2>Loremaster Notes</h2><div class="doc-notes">${linked.replace(/\n/g,'<br>')}</div></section>`; }
@@ -103,9 +108,14 @@ h1,h2,h3{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;line-hei
 .dt-year{font-family:monospace;font-size:12px;color:#9c6f23;width:90px;text-align:right;flex-shrink:0;padding-top:3px}
 .dt-dot{width:11px;height:11px;border-radius:50%;background:#c9a441;border:2px solid #f5f0e6;flex-shrink:0;margin-top:4px}
 .dt-body{flex:1}.dt-desc{color:#7a6a4a;font-size:14px}
-.econ-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
-.econ-item{background:#ece4d2;border:1px solid #ddd0b5;border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center}
-.econ-tag{font-family:monospace;font-size:10px;text-transform:uppercase;color:#9a8a6a}
+.econ-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.econ-item{background:#ece4d2;border:1px solid #ddd0b5;border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;break-inside:avoid}
+.econ-item-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.econ-tags{display:flex;gap:6px;flex-shrink:0}
+.econ-tag{font-family:monospace;font-size:10px;text-transform:uppercase;color:#9a8a6a;white-space:nowrap}
+.econ-tag.danger{color:#a8392f}
+.econ-val-line{font-size:13px;color:#6b5d44;font-style:italic}
+.econ-desc{font-size:13px;color:#5a4f3a;line-height:1.5}
 .doc-notes{background:#ece4d2;border:1px solid #d8cbb0;border-radius:10px;padding:24px 28px;font-size:15px}
 @media print{body{background:#fff}.wrap{padding:0 20px;max-width:100%}.doc-sec{page-break-inside:auto}.doc-entry,.dt-row{page-break-inside:avoid}.doc-toc{page-break-after:always}.doc-hero{page-break-after:avoid}}
 `;

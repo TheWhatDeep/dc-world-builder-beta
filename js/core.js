@@ -68,7 +68,7 @@ function newWorld(){
     entities:[],      // {id,type,name,desc,canon,tags,fields:{},rels:[{type,target}],birth,death,when,map:{x,y},lang:{words:[]},mana,created}
     notes:'',         // freeform lore document
     map:{ image:null, name:'The Known World' },
-    economy:[],       // {id,name,scarcity,value,note}
+    economy:[],       // {id,name,description,rarity,value,scarcity,danger} — scarcity kept for back-compat
     branches:[],      // saved alternate snapshots {id,name,date,data}
   };
 }
