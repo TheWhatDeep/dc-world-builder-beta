@@ -176,7 +176,7 @@ span[style*="inline-flex"]>svg{width:100%;height:100%;display:block}
 
 .empty{text-align:center;padding:70px 20px;color:var(--ink-faint)}
 .empty .big{font-family:var(--serif);font-size:23px;color:var(--ink-dim);margin-bottom:8px}
-.empty svg{width:54px;height:54px;opacity:.3;margin-bottom:18px}
+.empty>svg{width:54px;height:54px;opacity:.3;margin-bottom:18px}
 
 /* ===== Detail / inspector fields ===== */
 .field-group{margin-bottom:4px}

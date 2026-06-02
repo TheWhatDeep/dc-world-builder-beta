@@ -136,6 +136,6 @@ function emptyState(meta){
   return `<div class="empty">${I.book}
     <div class="big">No ${esc(meta.plural.toLowerCase())} yet</div>
     <p class="muted">Every world begins with a single name. Create your first entry to weave it into the web.</p>
-    <button class="btn amber" style="margin-top:18px" data-new="${UI.filterType!=='all'?UI.filterType:''}">${I.plus} Create one</button>
+    <button class="btn sm amber" style="margin-top:18px" data-new="${UI.filterType!=='all'?UI.filterType:''}">${I.plus} Create one</button>
   </div>`;
 }
