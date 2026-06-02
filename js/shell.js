@@ -60,8 +60,8 @@ function renderSidebar(){
     h+='</div>';
   }
   // total
-  h+=`<div style="margin-top:auto;padding:16px 18px;border-top:1px solid var(--line-soft)">
-    <div style="font-family:var(--mono);font-size:10px;color:var(--ink-faint);line-height:1.7">
+  h+=`<div style="margin-top:auto;padding:8px 18px;border-top:1px solid var(--line-soft)">
+    <div style="font-family:var(--mono);font-size:10px;color:var(--ink-faint);line-height:1.55">
       ${DB.entities.length} entities<br>${DB.entities.filter(e=>e.canon==='canon').length} canon · ${countRels()} links
     </div></div>`;
   $('#sidebar').innerHTML=h;
