@@ -3,6 +3,26 @@
 const MAP_PINNABLE = ['place','char','event','faction','spell'];
 const MAP_FILTERS = [['all','All'],['place','Places'],['char','Characters'],['event','Events'],['faction','Factions'],['spell','Spells']];
 let mapState={filter:'all'};
+
+/* mapgen-api: the deployed Worker generates an SVG map from query params (GET).
+   We embed the returned SVG as a data URL in DB.map.image, so it renders and
+   saves exactly like an uploaded image. The app degrades gracefully if the
+   service is unreachable — manual upload and the rest of the app are unaffected. */
+const MAPGEN_API = 'https://mapgen-api.dev-carpeso.workers.dev';
+const MAPGEN_STYLES = [
+  ['continents','Continents — a few large rugged landmasses'],
+  ['archipelago','Archipelago — many small islands'],
+  ['highIsland','High Island — one large detailed island'],
+  ['lowIsland','Low Island — a flattened island'],
+  ['atoll','Atoll — ring of land around a lagoon'],
+  ['volcano','Volcano — a single dominant peak'],
+  ['pangaea','Pangaea — one supercontinent'],
+  ['peninsula','Peninsula — land tapering off one edge'],
+  ['mediterranean','Mediterranean — land ringing a central sea'],
+  ['isthmus','Isthmus — two landmasses joined by a neck'],
+];
+const mgClamp=(v,min,max,def)=>{ v=parseInt(v,10); return isNaN(v)?def:Math.max(min,Math.min(max,v)); };
+const mgSeed=()=>String(Math.floor(Math.random()*1e9));
 function viewMap(){
   const pinned = DB.entities.filter(e=>e.map);
   return `<div class="view active">
@@ -10,6 +30,7 @@ function viewMap(){
       <div><h1 class="view-title"><span class="dot"></span>Cartography</h1>
       <div class="view-sub">${esc(DB.map.name)} — ${pinned.length} place${pinned.length===1?'':'s'} charted</div></div>
       <div class="view-actions">
+        <button class="btn amber" id="genMapBtn">${I.dice} Generate Map</button>
         <button class="btn" data-mapname>Rename Map</button>
         <button class="btn" id="uploadMapBtn">${I.map} ${DB.map.image?'Replace':'Upload'} Map Image</button>
         ${DB.map.image?`<button class="btn danger" id="clearMap">Clear</button>`:''}
@@ -57,6 +78,7 @@ function initMap(){
   if(DB.map.image){ canvas.style.background=`url(${DB.map.image}) center/contain no-repeat`; }
   else { canvas.style.background=`repeating-linear-gradient(45deg,#1a1610,#1a1610 18px,#1d1813 18px,#1d1813 36px)`; }
 
+  if($('#genMapBtn')) $('#genMapBtn').onclick=openMapGenModal;
   $('#uploadMapBtn').onclick=()=>{ pickImage(data=>{ DB.map.image=data; renderView(); toast('Map uploaded'); }); };
   if($('#clearMap')) $('#clearMap').onclick=()=>{ DB.map.image=null; renderView(); };
   if($('[data-mapname]')) $('[data-mapname]').onclick=()=>{ const n=prompt('Map name:',DB.map.name); if(n){DB.map.name=n;renderView();} };
@@ -117,6 +139,86 @@ function renderMapCarousel(){
   $$('[data-mapfilter]').forEach(b=>b.classList.toggle('on', b.dataset.mapfilter===mapState.filter));
   track.innerHTML=mapChips();
   wireMapChips();
+}
+/* Generate a procedural map from mapgen-api. GET /map.svg returns an SVG, which
+   we embed as a base64 data URL in DB.map.image (renders + saves like an upload).
+   Params persist in DB.map.gen so the modal pre-fills for easy re-rolls. */
+function openMapGenModal(){
+  const g=DB.map.gen||{};
+  const on=v=>v===undefined?true:!!v;
+  const seed = (g.seed!=null && g.seed!=='') ? g.seed : mgSeed();
+  const style=g.style||'continents', width=g.width||1200, height=g.height||800;
+  const states=g.states||12, cells=g.cells||4000, sea=g.sea!=null?g.sea:0.5;
+  const ov=$('#modalOverlay');
+  ov.innerHTML=`<div class="modal"><div class="modal-head"><h3>${I.dice} Generate Map</h3><button class="close" data-mclose>${I.x}</button></div>
+    <div class="modal-body">
+      <p class="muted" style="font-size:12.5px;margin-bottom:14px">A procedural world map. This replaces the current map image; pins and lore are untouched.</p>
+      <label>Seed</label>
+      <div class="flex gap">
+        <input id="mgSeed" value="${esc(String(seed))}" placeholder="random" autocomplete="off" spellcheck="false" style="flex:1">
+        <button class="btn sm" id="mgReseed" title="Random seed">${I.dice}</button>
+      </div>
+      <label>Terrain style</label>
+      <select id="mgStyle">${MAPGEN_STYLES.map(([k,label])=>`<option value="${k}" ${k===style?'selected':''}>${esc(label)}</option>`).join('')}</select>
+      <div class="two-col">
+        <div><label>Width (px)</label><input id="mgWidth" type="number" min="200" max="4000" value="${width}"></div>
+        <div><label>Height (px)</label><input id="mgHeight" type="number" min="200" max="4000" value="${height}"></div>
+      </div>
+      <div class="two-col">
+        <div><label>Countries</label><input id="mgStates" type="number" min="1" max="40" value="${states}"></div>
+        <div><label>Detail (cells)</label><input id="mgCells" type="number" min="500" max="12000" value="${cells}"></div>
+      </div>
+      <label>Sea level — <span id="mgSeaVal" style="font-family:var(--mono)">${sea}</span></label>
+      <input id="mgSea" class="mg-range" type="range" min="0.2" max="0.8" step="0.05" value="${sea}">
+      <label>Layers</label>
+      <div class="mg-toggles">
+        <label><input type="checkbox" id="mgBorders" ${on(g.borders)?'checked':''}> Borders</label>
+        <label><input type="checkbox" id="mgLabels" ${on(g.labels)?'checked':''}> Labels</label>
+        <label><input type="checkbox" id="mgMarkers" ${on(g.markers)?'checked':''}> Markers</label>
+        <label><input type="checkbox" id="mgTerrain" ${on(g.terrain)?'checked':''}> Terrain shading</label>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-mclose>Cancel</button>
+      <button class="btn amber" id="mgGo">${I.dice} Generate</button>
+    </div></div>`;
+  ov.classList.add('open');
+  $$('[data-mclose]',ov).forEach(b=>b.onclick=closeModal);
+  ov.onclick=ev=>{ if(ev.target===ov) closeModal(); };
+  $('#mgReseed',ov).onclick=()=>{ $('#mgSeed',ov).value=mgSeed(); };
+  $('#mgSea',ov).oninput=()=>{ $('#mgSeaVal',ov).textContent=$('#mgSea',ov).value; };
+
+  $('#mgGo',ov).onclick=async ()=>{
+    const params={
+      seed: ($('#mgSeed',ov).value.trim() || mgSeed()),
+      style: $('#mgStyle',ov).value,
+      width: mgClamp($('#mgWidth',ov).value,200,4000,1200),
+      height: mgClamp($('#mgHeight',ov).value,200,4000,800),
+      states: mgClamp($('#mgStates',ov).value,1,40,12),
+      cells: mgClamp($('#mgCells',ov).value,500,12000,4000),
+      sea: $('#mgSea',ov).value,
+      borders: $('#mgBorders',ov).checked, labels: $('#mgLabels',ov).checked,
+      markers: $('#mgMarkers',ov).checked, terrain: $('#mgTerrain',ov).checked,
+    };
+    const qs=new URLSearchParams({ seed:params.seed, style:params.style, width:params.width, height:params.height,
+      states:params.states, cells:params.cells, sea:params.sea,
+      borders:params.borders?'1':'0', labels:params.labels?'1':'0', markers:params.markers?'1':'0', terrain:params.terrain?'1':'0' });
+    const btn=$('#mgGo',ov); btn.disabled=true; btn.textContent='Generating…';
+    try{
+      const res=await fetch(`${MAPGEN_API}/map.svg?${qs.toString()}`);
+      if(!res.ok) throw new Error('server returned '+res.status);
+      const svg=await res.text();
+      if(!svg.trim().startsWith('<svg')) throw new Error('unexpected response');
+      DB.map.image='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(svg)));
+      DB.map.gen=params;
+      closeModal(); renderView();
+      notify(`Map generated — ${params.style}, seed ${params.seed}.`, 'success');
+    }catch(err){
+      if($('#mgGo',ov)){ $('#mgGo',ov).disabled=false; $('#mgGo',ov).innerHTML=`${I.dice} Generate`; }
+      notify('Map generation failed: '+err.message+'. Manual upload still works.', 'error');
+    }
+  };
+  setTimeout(()=>{ const s=$('#mgSeed',ov); s&&s.focus(); }, 40);
 }
 function pickImage(cb){
   const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';

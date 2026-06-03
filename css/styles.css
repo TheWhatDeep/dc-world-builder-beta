@@ -286,6 +286,11 @@ span[style*="inline-flex"]>svg{width:100%;height:100%;display:block}
 .map-chip.pinned .mc-name{color:var(--ink-dim)}
 .map-chip.dragging{opacity:.4;border-color:var(--amber)}
 .map-carousel-empty{font-size:12.5px;color:var(--ink-faint);padding:6px 2px}
+/* map-generator modal controls */
+.mg-toggles{display:flex;gap:16px;flex-wrap:wrap;margin-top:6px}
+.mg-toggles label{display:inline-flex;align-items:center;gap:6px;margin:0;font-size:13px;letter-spacing:0;text-transform:none;color:var(--ink);font-family:var(--body);cursor:pointer}
+.mg-toggles input{width:auto;accent-color:var(--amber)}
+.mg-range{width:100%;padding:0;border:none;background:transparent;accent-color:var(--amber)}
 
 /* ===== Consistency ===== */
 .issue-card{display:flex;gap:13px;padding:14px 16px;border:1px solid var(--line);border-radius:8px;margin-bottom:11px;background:var(--bg-raised);transition:all .16s}

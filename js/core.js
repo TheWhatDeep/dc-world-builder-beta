@@ -67,7 +67,7 @@ function newWorld(){
     ]},
     entities:[],      // {id,type,name,desc,canon,tags,fields:{},rels:[{type,target}],birth,death,when,map:{x,y},lang:{words:[]},mana,created}
     notes:'',         // freeform lore document
-    map:{ image:null, name:'The Known World' },
+    map:{ image:null, name:'The Known World', gen:null },  // gen = last mapgen-api params (for re-roll/pre-fill)
     economy:[],       // {id,name,description,rarity,value,scarcity,danger} — scarcity kept for back-compat
     journal:[],       // campaign session log {id,title,campaign,date,year,body,_t}
     branches:[],      // saved alternate snapshots {id,name,date,data}
