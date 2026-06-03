@@ -149,6 +149,7 @@ function openMapGenModal(){
   const seed = (g.seed!=null && g.seed!=='') ? g.seed : mgSeed();
   const style=g.style||'continents', width=g.width||1200, height=g.height||800;
   const states=g.states||12, cells=g.cells||4000, sea=g.sea!=null?g.sea:0.5;
+  const factions=DB.entities.filter(e=>e.type==='faction'), nameFrom=!!g.nameFromFactions && factions.length>0;
   const ov=$('#modalOverlay');
   ov.innerHTML=`<div class="modal"><div class="modal-head"><h3>${I.dice} Generate Map</h3><button class="close" data-mclose>${I.x}</button></div>
     <div class="modal-body">
@@ -167,6 +168,9 @@ function openMapGenModal(){
       <div class="two-col">
         <div><label>Countries</label><input id="mgStates" type="number" min="1" max="40" value="${states}"></div>
         <div><label>Detail (cells)</label><input id="mgCells" type="number" min="500" max="12000" value="${cells}"></div>
+      </div>
+      <div class="mg-toggles" style="margin:8px 0 2px">
+        <label><input type="checkbox" id="mgFactionNames" ${nameFrom?'checked':''} ${factions.length?'':'disabled'}> Name countries after my Factions <span style="color:var(--ink-faint);font-family:var(--mono);font-size:11px">${factions.length?'('+factions.length+', largest first)':'(none yet)'}</span></label>
       </div>
       <label>Sea level — <span id="mgSeaVal" style="font-family:var(--mono)">${sea}</span></label>
       <input id="mgSea" class="mg-range" type="range" min="0.2" max="0.8" step="0.05" value="${sea}">
@@ -199,20 +203,35 @@ function openMapGenModal(){
       sea: $('#mgSea',ov).value,
       borders: $('#mgBorders',ov).checked, labels: $('#mgLabels',ov).checked,
       markers: $('#mgMarkers',ov).checked, terrain: $('#mgTerrain',ov).checked,
+      nameFromFactions: $('#mgFactionNames',ov).checked,
     };
     const qs=new URLSearchParams({ seed:params.seed, style:params.style, width:params.width, height:params.height,
       states:params.states, cells:params.cells, sea:params.sea,
       borders:params.borders?'1':'0', labels:params.labels?'1':'0', markers:params.markers?'1':'0', terrain:params.terrain?'1':'0' });
+    const url=`${MAPGEN_API}/map.svg?${qs.toString()}`;
+    // faction names fill countries largest-first; sent as a POST override (states.names)
+    const facNames=params.nameFromFactions ? DB.entities.filter(e=>e.type==='faction').map(e=>e.name) : [];
     const btn=$('#mgGo',ov); btn.disabled=true; btn.textContent='Generating…';
     try{
-      const res=await fetch(`${MAPGEN_API}/map.svg?${qs.toString()}`);
+      let res=null, named=false, postFell=false;
+      // try POST overrides; gracefully fall back to GET if the deployed Worker
+      // doesn't take POST yet (405) or the CORS preflight is blocked.
+      if(facNames.length){
+        try{
+          const pr=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({states:{names:facNames}})});
+          if(pr.ok){ res=pr; named=true; } else { postFell=true; }
+        }catch(e){ postFell=true; }
+      }
+      if(!res) res=await fetch(url);
       if(!res.ok) throw new Error('server returned '+res.status);
       const svg=await res.text();
       if(!svg.trim().startsWith('<svg')) throw new Error('unexpected response');
       DB.map.image='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(svg)));
       DB.map.gen=params;
       closeModal(); renderView();
-      notify(`Map generated — ${params.style}, seed ${params.seed}.`, 'success');
+      if(named) notify(`Map generated — ${facNames.length} ${facNames.length===1?'country':'countries'} named after your factions.`, 'success');
+      else if(postFell) notify('Map generated. Faction naming needs the Worker\'s POST build deployed (npx wrangler deploy) — used a standard map for now.', 'warn');
+      else notify(`Map generated — ${params.style}, seed ${params.seed}.`, 'success');
     }catch(err){
       if($('#mgGo',ov)){ $('#mgGo',ov).disabled=false; $('#mgGo',ov).innerHTML=`${I.dice} Generate`; }
       notify('Map generation failed: '+err.message+'. Manual upload still works.', 'error');
