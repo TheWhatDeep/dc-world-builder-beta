@@ -261,7 +261,12 @@ span[style*="inline-flex"]>svg{width:100%;height:100%;display:block}
 /* ===== Map ===== */
 .map-stage{position:relative;height:calc(100vh - 396px);min-height:300px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#1a1610}
 .map-stage.drag-over{outline:2px dashed var(--amber);outline-offset:-6px}
-#mapCanvas{position:absolute;inset:0}
+.map-stage.zoomed{cursor:grab}
+.map-stage.panning{cursor:grabbing}
+#mapCanvas{position:absolute;inset:0;transform-origin:0 0}
+.map-zoom{position:absolute;bottom:14px;right:14px;display:flex;flex-direction:column;gap:6px;z-index:6}
+.map-zoom button{width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:rgba(28,24,18,.92);border:1px solid var(--line);border-radius:6px;color:var(--ink-dim);font-size:17px;line-height:1;transition:all .15s}
+.map-zoom button:hover{border-color:var(--amber);color:var(--ink);background:var(--bg-hover)}
 .map-pin{position:absolute;transform:translate(-50%,-100%);cursor:pointer;z-index:5;transition:transform .15s}
 .map-pin:hover{transform:translate(-50%,-100%) scale(1.15)}
 .map-pin svg{width:26px;height:26px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.6))}

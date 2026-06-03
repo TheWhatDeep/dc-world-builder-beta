@@ -3,6 +3,7 @@
 const MAP_PINNABLE = ['place','char','event','faction','spell'];
 const MAP_FILTERS = [['all','All'],['place','Places'],['char','Characters'],['event','Events'],['faction','Factions'],['spell','Spells']];
 let mapState={filter:'all'};
+let mapView={z:1,tx:0,ty:0,_img:undefined};   // map canvas zoom/pan; resets when the image changes
 
 /* mapgen-api: the deployed Worker generates an SVG map from query params (GET).
    We embed the returned SVG as a data URL in DB.map.image, so it renders and
@@ -42,7 +43,12 @@ function viewMap(){
       ${!DB.map.image?`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;color:var(--ink-faint);text-align:center;padding:30px;pointer-events:none">
         ${I.map}<div style="font-family:var(--serif);font-size:21px;color:var(--ink-dim);margin:12px 0 6px">No map image yet</div>
         <p>Upload a map of your world, then drag entities from the tray below onto it.<br>Or drop them on the blank canvas to sketch spatial relationships.</p></div>`:''}
-      <div class="map-hint" id="mapHint">Drag an entity from the tray onto the map · drag a pin to move it · click a pin to inspect</div>
+      <div class="map-zoom" id="mapZoom">
+        <button id="mapZoomIn" title="Zoom in" aria-label="Zoom in">+</button>
+        <button id="mapZoomOut" title="Zoom out" aria-label="Zoom out">−</button>
+        <button id="mapZoomReset" title="Reset view" aria-label="Reset view">⊙</button>
+      </div>
+      <div class="map-hint" id="mapHint">Drag from the tray to place · scroll to zoom, drag to pan · click a pin to inspect</div>
     </div>
     ${mapCarousel()}
   </div>`;
@@ -78,10 +84,34 @@ function initMap(){
   if(DB.map.image){ canvas.style.background=`url(${DB.map.image}) center/contain no-repeat`; }
   else { canvas.style.background=`repeating-linear-gradient(45deg,#1a1610,#1a1610 18px,#1d1813 18px,#1d1813 36px)`; }
 
+  // zoom/pan: reset when the map image changes, otherwise persist across re-renders
+  if(mapView._img!==(DB.map.image||null)){ mapView.z=1; mapView.tx=0; mapView.ty=0; mapView._img=DB.map.image||null; }
+  applyMapTransform();
+
   if($('#genMapBtn')) $('#genMapBtn').onclick=openMapGenModal;
   $('#uploadMapBtn').onclick=()=>{ pickImage(data=>{ DB.map.image=data; renderView(); toast('Map uploaded'); }); };
   if($('#clearMap')) $('#clearMap').onclick=()=>{ DB.map.image=null; renderView(); };
   if($('[data-mapname]')) $('[data-mapname]').onclick=()=>{ const n=prompt('Map name:',DB.map.name); if(n){DB.map.name=n;renderView();} };
+
+  // zoom: buttons, wheel-toward-cursor, and drag-to-pan (only when zoomed in)
+  if($('#mapZoomIn')) $('#mapZoomIn').onclick=()=>zoomMapBy(1.4);
+  if($('#mapZoomOut')) $('#mapZoomOut').onclick=()=>zoomMapBy(1/1.4);
+  if($('#mapZoomReset')) $('#mapZoomReset').onclick=()=>{ mapView.z=1; mapView.tx=0; mapView.ty=0; applyMapTransform(); };
+  stage.onwheel=ev=>{
+    ev.preventDefault();
+    const r=stage.getBoundingClientRect(), sx=ev.clientX-r.left, sy=ev.clientY-r.top;
+    const z0=mapView.z, z1=Math.max(1,Math.min(6, z0*(ev.deltaY<0?1.15:0.87)));
+    if(z1===z0) return;
+    mapView.tx=sx-(sx-mapView.tx)*(z1/z0); mapView.ty=sy-(sy-mapView.ty)*(z1/z0);
+    mapView.z=z1; clampMapView(); applyMapTransform();
+  };
+  stage.onmousedown=ev=>{
+    if(mapView.z<=1 || ev.target.closest('.map-pin') || ev.target.closest('.map-zoom')) return;
+    const sx=ev.clientX, sy=ev.clientY, tx0=mapView.tx, ty0=mapView.ty;
+    const mv=e=>{ mapView.tx=tx0+(e.clientX-sx); mapView.ty=ty0+(e.clientY-sy); clampMapView(); applyMapTransform(); };
+    const up=()=>{ window.removeEventListener('mousemove',mv); window.removeEventListener('mouseup',up); stage.classList.remove('panning'); };
+    stage.classList.add('panning'); window.addEventListener('mousemove',mv); window.addEventListener('mouseup',up);
+  };
 
   // drop target: dragging an entity chip onto the stage pins it — or moves it if already pinned.
   // The dragged id travels via dataTransfer, not a module variable.
@@ -90,9 +120,7 @@ function initMap(){
   stage.addEventListener('drop', ev=>{
     ev.preventDefault(); stage.classList.remove('drag-over');
     const id=ev.dataTransfer.getData('text/plain'); const e=ent(id); if(!e) return;
-    const r=stage.getBoundingClientRect();
-    let x=(ev.clientX-r.left)/r.width*100, y=(ev.clientY-r.top)/r.height*100;
-    x=Math.max(0,Math.min(100,x)); y=Math.max(0,Math.min(100,y));
+    const {x,y}=stageToMapPct(ev.clientX,ev.clientY);
     const wasPinned=!!e.map;
     e.map={x,y}; e._t=Date.now(); renderView();
     notify(wasPinned?`Moved ${e.name} on the map.`:`Pinned ${e.name} to the map.`, 'success');
@@ -110,10 +138,8 @@ function initMap(){
     pin.onmousedown=ev=>{
       ev.stopPropagation();
       let moved=false;
-      const mv=e=>{ moved=true; const r=stage.getBoundingClientRect();
-        let x=(e.clientX-r.left)/r.width*100, y=(e.clientY-r.top)/r.height*100;
-        x=Math.max(0,Math.min(100,x)); y=Math.max(0,Math.min(100,y));
-        pin.style.left=x+'%'; pin.style.top=y+'%'; const en=ent(id); if(en) en.map={x,y}; };
+      const mv=e=>{ moved=true; const p=stageToMapPct(e.clientX,e.clientY);
+        const en=ent(id); if(en){ en.map={x:p.x,y:p.y}; placeMapPin(pin,p.x,p.y); } };
       const up=()=>{
         window.removeEventListener('mousemove',mv);
         window.removeEventListener('mouseup',up);
@@ -124,6 +150,43 @@ function initMap(){
       window.addEventListener('mouseup',up);
     };
   });
+}
+/* ----- map zoom/pan helpers ----- */
+/* screen point → map percentage (0–100), inverting the current zoom/pan transform */
+function stageToMapPct(clientX,clientY){
+  const stage=$('#mapStage'); const r=stage.getBoundingClientRect();
+  const vx=(clientX-r.left-mapView.tx)/mapView.z, vy=(clientY-r.top-mapView.ty)/mapView.z;
+  return { x:Math.max(0,Math.min(100, vx/r.width*100)), y:Math.max(0,Math.min(100, vy/r.height*100)) };
+}
+/* position a stage-level pin (px) from its stored map % + the current transform */
+function placeMapPin(pin,xPct,yPct){
+  const stage=$('#mapStage'); if(!stage) return; const r=stage.getBoundingClientRect();
+  pin.style.left=(mapView.tx + xPct/100*r.width*mapView.z)+'px';
+  pin.style.top =(mapView.ty + yPct/100*r.height*mapView.z)+'px';
+}
+function repositionMapPins(){
+  const stage=$('#mapStage'); if(!stage) return;
+  $$('.map-pin',stage).forEach(pin=>{ const e=ent(pin.dataset.pin); if(e&&e.map) placeMapPin(pin,e.map.x,e.map.y); });
+}
+function clampMapView(){
+  const stage=$('#mapStage'); if(!stage) return;
+  const W=stage.clientWidth, H=stage.clientHeight;
+  mapView.z=Math.max(1,Math.min(6,mapView.z));
+  mapView.tx=Math.max(W*(1-mapView.z), Math.min(0, mapView.tx));
+  mapView.ty=Math.max(H*(1-mapView.z), Math.min(0, mapView.ty));
+}
+function applyMapTransform(){
+  const canvas=$('#mapCanvas'); if(canvas) canvas.style.transform=`translate(${mapView.tx}px,${mapView.ty}px) scale(${mapView.z})`;
+  const stage=$('#mapStage'); if(stage) stage.classList.toggle('zoomed', mapView.z>1);
+  repositionMapPins();
+}
+function zoomMapBy(f){
+  const stage=$('#mapStage'); if(!stage) return;
+  const W=stage.clientWidth, H=stage.clientHeight, cx=W/2, cy=H/2;
+  const z0=mapView.z, z1=Math.max(1,Math.min(6, z0*f));
+  if(z1===z0) return;
+  mapView.tx=cx-(cx-mapView.tx)*(z1/z0); mapView.ty=cy-(cy-mapView.ty)*(z1/z0);
+  mapView.z=z1; clampMapView(); applyMapTransform();
 }
 /* (re)wire the carousel chips to the HTML5 drag API */
 function wireMapChips(){
