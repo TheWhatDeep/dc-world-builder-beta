@@ -254,26 +254,34 @@ function openMapGenModal(){
   ov.onclick=ev=>{ if(ev.target===ov) closeModal(); };
   $('#mgReseed',ov).onclick=()=>{ $('#mgSeed',ov).value=mgSeed(); };
   $('#mgSea',ov).oninput=()=>{ $('#mgSeaVal',ov).textContent=$('#mgSea',ov).value; };
+  // while naming after factions, the country count IS the faction count — lock the Countries field
+  const syncStatesField=()=>{ const cb=$('#mgFactionNames',ov), sf=$('#mgStates',ov);
+    if(cb&&cb.checked){ sf.value=Math.max(1,Math.min(40,factions.length)); sf.disabled=true; sf.title='Set by your faction count while naming after factions'; }
+    else { sf.disabled=false; sf.title=''; } };
+  $('#mgFactionNames',ov).onchange=syncStatesField;
+  syncStatesField();
 
   $('#mgGo',ov).onclick=async ()=>{
+    // when naming after factions, generate EXACTLY as many countries as factions
+    // so no surplus, procedurally-named countries come back from the generator
+    const useFac=$('#mgFactionNames',ov).checked && factions.length>0;
+    const facNames=useFac ? factions.map(e=>e.name) : [];
     const params={
       seed: ($('#mgSeed',ov).value.trim() || mgSeed()),
       style: $('#mgStyle',ov).value,
       width: mgClamp($('#mgWidth',ov).value,200,4000,1200),
       height: mgClamp($('#mgHeight',ov).value,200,4000,800),
-      states: mgClamp($('#mgStates',ov).value,1,40,12),
+      states: useFac ? Math.max(1,Math.min(40,facNames.length)) : mgClamp($('#mgStates',ov).value,1,40,12),
       cells: mgClamp($('#mgCells',ov).value,500,12000,4000),
       sea: $('#mgSea',ov).value,
       borders: $('#mgBorders',ov).checked, labels: $('#mgLabels',ov).checked,
       markers: $('#mgMarkers',ov).checked, terrain: $('#mgTerrain',ov).checked,
-      nameFromFactions: $('#mgFactionNames',ov).checked,
+      nameFromFactions: useFac,
     };
     const qs=new URLSearchParams({ seed:params.seed, style:params.style, width:params.width, height:params.height,
       states:params.states, cells:params.cells, sea:params.sea,
       borders:params.borders?'1':'0', labels:params.labels?'1':'0', markers:params.markers?'1':'0', terrain:params.terrain?'1':'0' });
     const url=`${MAPGEN_API}/map.svg?${qs.toString()}`;
-    // faction names fill countries largest-first; sent as a POST override (states.names)
-    const facNames=params.nameFromFactions ? DB.entities.filter(e=>e.type==='faction').map(e=>e.name) : [];
     const btn=$('#mgGo',ov); btn.disabled=true; btn.textContent='Generating…';
     try{
       let res=null, named=false, postFell=false;
