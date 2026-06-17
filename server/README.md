@@ -4,8 +4,47 @@ Backend for CODEX — a normalized relational store, accounts, and multi-user se
 The server owns the data (no more single world JSON blob) and also serves the vanilla frontend,
 so the whole app runs from one origin.
 
-> Status: **Phase 1 — foundation.** Auth, sessions, and world metadata CRUD are implemented.
-> Entity/relationship/asset APIs, search, and the frontend data-layer rewrite land in later phases.
+> Status: **Phase 2 — data API.** Auth, sessions, world CRUD (Phase 1), plus the entity /
+> relationship / search API and the image asset pipeline are implemented. The frontend
+> data-layer rewrite (pointing the vanilla client at this API) lands next.
+
+## API overview
+
+All `/api` routes require an authenticated session cookie; writes also require the
+`X-Codex-Client` header (CSRF defense). Worlds and their contents are scoped to the owner.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET/POST` | `/api/worlds`, `/api/worlds/:id` | World metadata CRUD (Phase 1) |
+| `GET` | `/api/worlds/:worldId/entities` | List/search entities — `?q=` (full-text), `?type=`, `?canon=`, `?sort=`, `?limit=`/`?offset=`. Always paginated. |
+| `GET` | `/api/worlds/:worldId/entities/:id` | Full entity (fields, tags, rels, lexicon, assets) |
+| `POST/PATCH/DELETE` | `/api/worlds/:worldId/entities/:id` | Entity create/update/delete |
+| `GET` | `/api/worlds/:worldId/relationships` | All relationship edges (graph view) |
+| `POST` | `/api/worlds/:worldId/assets?entity_id=&kind=` | Upload an image (multipart `file`) |
+| `GET` | `/api/assets/:id?size=thumb\|display\|original` | Serve an image tier (owner only) |
+| `DELETE` | `/api/assets/:id` | Delete an asset and its files |
+
+### Entity shape
+
+The API serializes the relational store back into the shape the vanilla client already
+uses, so the data-layer swap is storage-only, not a model change:
+
+```jsonc
+{
+  "id": "e_…", "type": "char", "name": "…", "desc": "…", "canon": "canon",
+  "tags": ["…"], "fields": { "Title": "…" }, "rels": [{ "type": "member of", "target": "e_…" }],
+  "birth": 1180, "death": 1240, "when": null, "mana": null, "created": null,
+  "map": { "x": 12.5, "y": 40.0 }, "lang": { "words": [{ "word": "…", "gloss": "…" }] },
+  "assets": [{ "id": "a_…", "url": "…", "thumb_url": "…", "original_url": "…" }]
+}
+```
+
+### Image pipeline
+
+Each upload yields three tiers so clients (especially mobile/cellular) fetch only what they
+need: the **original** bytes (preserved for export fidelity), a **display** webp bounded to
+`CODEX_IMAGE_MAX_DIM`, and a **thumbnail** webp bounded to `CODEX_THUMB_DIM`. Uploads over
+`CODEX_MAX_ASSET_BYTES` are rejected (413); non-images are rejected (415).
 
 ## Quick start (local)
 
@@ -50,7 +89,7 @@ files. Back up both together.
 ## Tests
 
 ```bash
-npm test               # auth, world CRUD, per-user isolation, CSRF
+npm test               # auth, world CRUD, isolation, CSRF, entities, search, image pipeline
 ```
 
 ## Security notes

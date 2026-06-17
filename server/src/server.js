@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
+import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -8,11 +9,14 @@ import { migrate } from './db/index.js';
 import { attachUser, csrfGuard } from './auth/middleware.js';
 import { authRoutes, bootstrapAdmin } from './auth/routes.js';
 import { worldRoutes } from './worlds/routes.js';
+import { entityRoutes } from './worlds/entities.js';
+import { assetRoutes } from './assets/routes.js';
 
 export async function buildApp() {
   const app = Fastify({ logger: { level: process.env.CODEX_LOG_LEVEL || 'info' } });
 
   await app.register(cookie);
+  await app.register(multipart, { limits: { fileSize: config.maxAssetBytes, files: 1 } });
 
   // Tolerate empty JSON bodies (e.g. DELETE sent with a JSON content-type) instead of 400ing.
   app.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, done) => {
@@ -34,6 +38,8 @@ export async function buildApp() {
 
   await app.register(authRoutes);
   await app.register(worldRoutes);
+  await app.register(entityRoutes);
+  await app.register(assetRoutes);
 
   // Serve the vanilla frontend so app + API share one origin.
   if (fs.existsSync(path.join(config.frontendDir, 'index.html'))) {
