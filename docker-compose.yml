@@ -1,0 +1,19 @@
+services:
+  codex:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    ports:
+      - "8787:8787"
+    environment:
+      CODEX_REGISTRATION_MODE: closed
+      CODEX_SECURE_COOKIES: "false"
+      # Optional first-run admin (created only if no users exist):
+      # CODEX_ADMIN_EMAIL: admin@example.com
+      # CODEX_ADMIN_PASSWORD: change-me-please
+    volumes:
+      - codex-data:/data
+    restart: unless-stopped
+
+volumes:
+  codex-data:
