@@ -73,5 +73,6 @@ function toggleTheme(){
   const cur = document.documentElement.getAttribute('data-theme') || 'dark';
   const next = cur==='dark' ? 'light' : 'dark';
   applyTheme(next);
+  if(typeof scheduleSave==='function') scheduleSave();
   notify(next==='light' ? 'Light mode — the scribe\'s daylight' : 'Dark mode — the midnight archive', 'info', {ttl:1800});
 }

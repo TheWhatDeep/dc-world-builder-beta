@@ -16,9 +16,11 @@
 <div class="toast" id="toast"></div>
 
 <!-- Load order matters: core defines globals (DB, UI, I, TYPES, helpers).
-     notify defines toast/notify/guard/applyTheme. Then features. app.js last. -->
+     notify defines toast/notify/guard/applyTheme. api defines API + Session.
+     Then features. app.js last. -->
 <script src="js/core.js"></script>
 <script src="js/notify.js"></script>
+<script src="js/api.js"></script>
 <script src="js/shell.js"></script>
 <script src="js/views-codex.js"></script>
 <script src="js/inspector.js"></script>

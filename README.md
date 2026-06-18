@@ -1,6 +1,6 @@
 # CODEX — The Worldwright's Archive
 
-A single-page worldbuilding tool. Entities, relationships, timelines, maps, languages, and lore — all in one place, all client-side, no accounts, no servers.
+A worldbuilding tool. Entities, relationships, timelines, maps, languages, and lore — all in one place. The browser app runs against a small self-hostable CODEX server that owns your data (accounts, multiple worlds, autosave, image storage).
 
 > *Built for worldbuilders, GMs, novelists, and anyone keeping a fictional cosmos in their head.*
 
@@ -24,19 +24,27 @@ A single-page worldbuilding tool. Entities, relationships, timelines, maps, lang
 - **Light & dark themes** — toggle in the topbar, saved with your world file
 - **Smart notifications** — every action confirms or explains why it can't proceed
 
-All persistence is via `.codex.json` files you download and re-open. Nothing is sent anywhere. Your worlds are yours.
+Worlds live on your CODEX server and **autosave** as you work. You can still download a
+`.codex.json` backup any time (Export → raw data) and re-import it as a new world. Self-host
+the server and your worlds are entirely yours.
 
 ---
 
 ## Run it locally
 
-It needs to be served over HTTP (not opened as `file://`) because browsers block multi-file pages from `file://`.
+The app is served *by* the CODEX server (so the frontend and API share one origin). Start the
+server and open it in a browser:
 
 ```bash
-cd codex
-python3 -m http.server 8765
-# then open http://localhost:8765
+cd server
+npm install
+npm run migrate     # create the SQLite schema
+npm start           # serves the app + API on http://localhost:8787
 ```
+
+The first account you register becomes the administrator. See [`server/README.md`](server/README.md)
+for configuration, Docker, and backups. (Opening the static files directly over
+`python3 -m http.server` no longer works on its own — the app needs the API to sign in and load worlds.)
 
 Any static server works (`npx serve`, `php -S`, VS Code Live Server, etc.).
 

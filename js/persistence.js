@@ -1,27 +1,164 @@
-/* ========== SAVE / LOAD (download-based, no localStorage) ========== */
+/* ==========================================================
+   DATA LAYER — server-backed (online-only).
+   The world lives on the server. We hydrate the in-memory DB
+   from /contents on open, and autosave the whole DB back on a
+   debounce after any change. A .codex.json file download remains
+   available as an offline backup (saveWorld, via Export).
+   ========================================================== */
 function download(filename, text, mime='text/plain'){
   const blob = new Blob([text],{type:mime});
   const url=URL.createObjectURL(blob); const a=document.createElement('a');
   a.href=url; a.download=filename; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1500);
 }
 function slug(s){ return (s||'world').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'world'; }
+
+/* ---- raw backup download (kept for portability / Export modal) ---- */
 function saveWorld(){
   DB.meta.saved=Date.now();
   download(slug(DB.meta.name)+'.codex.json', JSON.stringify(DB,null,2), 'application/json');
-  toast('World saved — keep the .codex.json file safe');
+  toast('Backup downloaded — keep the .codex.json file safe');
 }
+
+/* ---- open a world from the server into the in-memory DB ---- */
+async function openWorldContents(worldId){
+  const contents = await API.getContents(worldId);
+  DB = Object.assign(newWorld(), contents);
+  Session.worldId = worldId;
+  _lastSavedJson = serializeDB();            // freshly loaded == already saved
+  UI = { view:'dashboard', selected:null, filterType:'all', search:'',
+         canonFilter:'all', graphView:'all', sort:'name',
+         journalCampaign:'all', selectedJournal:null };
+  applyTheme(DB.meta.theme || 'dark');
+  if(typeof hideSplash==='function') hideSplash();
+  render();
+  attachAutosave();
+  setSaveStatus('saved');
+}
+
+/* ---- create a new (or demo, or imported) world on the server ---- */
+async function createServerWorld(name){
+  const meta = await API.createWorld({ name: (name && name.trim()) || 'Untitled World' });
+  await openWorldContents(meta.id);
+  notify(`Created "${DB.meta.name}".`, 'success');
+}
+async function createDemoWorld(){
+  const demo = seedDemo();
+  const meta = await API.createWorld({ name: demo.meta.name || 'Aetheria (Demo)' });
+  Session.worldId = meta.id;
+  DB = demo;
+  await API.putContents(meta.id, DB);
+  await openWorldContents(meta.id);
+  notify(`Exploring "${DB.meta.name}". Edits save automatically.`, 'info', {ttl:4000});
+}
+
+/* ---- import a .codex.json file as a new server world ---- */
 function loadWorld(){
   const inp=document.createElement('input'); inp.type='file'; inp.accept='.json,application/json';
   inp.onchange=()=>{ const f=inp.files[0]; if(!f)return; const rd=new FileReader();
-    rd.onload=()=>{ try{ const data=JSON.parse(rd.result);
+    rd.onload=async()=>{ try{ const data=JSON.parse(rd.result);
       if(!data.entities) throw new Error('This file isn\'t a CODEX world (no entities found).');
-      DB=Object.assign(newWorld(),data); UI={view:'dashboard',selected:null,filterType:'all',search:'',canonFilter:'all',graphView:'all'};
-      render(); applyTheme(DB.meta.theme||'dark');
-      notify(`Loaded "${DB.meta.name}" — ${DB.entities.length} entities.`, 'success');
-    }catch(err){ notify('Could not open that file: '+err.message, 'error'); } };
+      const meta = await API.createWorld({ name: (data.meta&&data.meta.name)||'Imported World' });
+      Session.worldId = meta.id;
+      DB = Object.assign(newWorld(), data);
+      await API.putContents(meta.id, DB);
+      await openWorldContents(meta.id);
+      notify(`Imported "${DB.meta.name}" — ${DB.entities.length} entities.`, 'success');
+    }catch(err){ notify('Could not import that file: '+err.message, 'error'); } };
     rd.onerror=()=>notify('Could not read that file — it may be corrupted.', 'error');
     rd.readAsText(f); };
   inp.click();
+}
+
+/* ---- return to the world picker (flush first) ---- */
+async function returnToPicker(){
+  await flushSave();
+  Session.worldId = null;
+  _lastSavedJson = null;
+  showSplash();
+}
+
+/* ========== AUTOSAVE ========== */
+let _lastSavedJson = null;
+let _saveTimer = null;
+let _saving = false;
+let _dirtyWhileSaving = false;
+let _autosaveWired = false;
+
+function serializeDB(){ return JSON.stringify(DB); }
+
+// Update the small topbar status pill, if present.
+function setSaveStatus(state){
+  const el = document.getElementById('saveStatus');
+  if(!el) return;
+  const map = { saving:['Saving…','saving'], saved:['Saved','saved'], error:['Save failed','error'], dirty:['Unsaved…','dirty'] };
+  const [text, cls] = map[state] || ['', ''];
+  el.textContent = text;
+  el.className = 'save-status ' + cls;
+}
+
+function scheduleSave(){
+  if(!Session.worldId) return;
+  // Navigation re-renders fire this too; only react when the world actually changed.
+  if(serializeDB() === _lastSavedJson) return;
+  setSaveStatus('dirty');
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(()=>flushSave(), 1100);
+}
+
+// Push the whole DB if it changed since the last successful save.
+async function flushSave(showToast){
+  if(!Session.worldId) return;
+  clearTimeout(_saveTimer);
+  const payload = serializeDB();
+  if(payload === _lastSavedJson){ setSaveStatus('saved'); if(showToast) toast('Already up to date'); return; }
+  if(_saving){ _dirtyWhileSaving = true; return; }
+  _saving = true; setSaveStatus('saving');
+  try{
+    DB.meta.saved = Date.now();
+    await API.putContents(Session.worldId, JSON.parse(payload));
+    _lastSavedJson = payload;
+    setSaveStatus('saved');
+    if(showToast) toast('Saved');
+  }catch(err){
+    setSaveStatus('error');
+    notify('Save failed: '+err.message+' (your changes are still here — retrying).', 'error');
+    scheduleSave(); // back off and retry
+  }finally{
+    _saving = false;
+    if(_dirtyWhileSaving){ _dirtyWhileSaving = false; scheduleSave(); }
+  }
+}
+
+// Manual Save button: flush immediately and confirm.
+function saveNow(){ flushSave(true); }
+
+// Best-effort flush during tab close (keepalive lets the request outlive the page).
+function flushBeacon(){
+  if(!Session.worldId) return;
+  const payload = serializeDB();
+  if(payload === _lastSavedJson) return;
+  try{
+    fetch('/api/worlds/'+Session.worldId+'/contents', {
+      method:'PUT', credentials:'same-origin', keepalive:true,
+      headers:{ 'Content-Type':'application/json', 'X-Codex-Client':'1' }, body:payload,
+    });
+  }catch(e){ /* nothing more we can do on unload */ }
+}
+
+// Wrap the central render functions so every mutation (which always re-renders) schedules a
+// save. The JSON-equality check in flushSave makes navigation-only renders a no-op. The
+// capture-phase input/change listeners catch live field typing.
+function attachAutosave(){
+  if(_autosaveWired) return;
+  _autosaveWired = true;
+  ['renderView','renderInspector','renderSidebar'].forEach(name=>{
+    const orig = window[name];
+    if(typeof orig !== 'function') return;
+    window[name] = function(){ const r = orig.apply(this, arguments); scheduleSave(); return r; };
+  });
+  document.addEventListener('input', scheduleSave, true);
+  document.addEventListener('change', scheduleSave, true);
+  window.addEventListener('beforeunload', flushBeacon);
 }
 
 /* ========== BRANCHES (alternate timelines / what-if) ========== */

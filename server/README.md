@@ -4,9 +4,10 @@ Backend for CODEX — a normalized relational store, accounts, and multi-user se
 The server owns the data (no more single world JSON blob) and also serves the vanilla frontend,
 so the whole app runs from one origin.
 
-> Status: **Phase 2 — data API.** Auth, sessions, world CRUD (Phase 1), plus the entity /
-> relationship / search API and the image asset pipeline are implemented. The frontend
-> data-layer rewrite (pointing the vanilla client at this API) lands next.
+> Status: **Phase 3 — server-backed client.** Auth, sessions, world CRUD (Phase 1), the
+> entity / relationship / search API and image pipeline (Phase 2), and the bulk world
+> load/save endpoint the vanilla frontend now runs on (Phase 3). The app is online-only:
+> the server owns the data; the client autosaves the whole world on a debounce.
 
 ## API overview
 
@@ -20,6 +21,8 @@ All `/api` routes require an authenticated session cookie; writes also require t
 | `GET` | `/api/worlds/:worldId/entities/:id` | Full entity (fields, tags, rels, lexicon, assets) |
 | `POST/PATCH/DELETE` | `/api/worlds/:worldId/entities/:id` | Entity create/update/delete |
 | `GET` | `/api/worlds/:worldId/relationships` | All relationship edges (graph view) |
+| `GET` | `/api/worlds/:worldId/contents` | Whole world in the client `DB` shape (frontend load) |
+| `PUT` | `/api/worlds/:worldId/contents` | Reconcile the whole world from the client `DB` (frontend save) |
 | `POST` | `/api/worlds/:worldId/assets?entity_id=&kind=` | Upload an image (multipart `file`) |
 | `GET` | `/api/assets/:id?size=thumb\|display\|original` | Serve an image tier (owner only) |
 | `DELETE` | `/api/assets/:id` | Delete an asset and its files |
@@ -89,7 +92,7 @@ files. Back up both together.
 ## Tests
 
 ```bash
-npm test               # auth, world CRUD, isolation, CSRF, entities, search, image pipeline
+npm test               # auth, CRUD, isolation, CSRF, entities, search, images, contents round-trip
 ```
 
 ## Security notes

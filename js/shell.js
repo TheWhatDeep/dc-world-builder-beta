@@ -22,10 +22,11 @@ function render(){
     <div class="brand"><span class="glyph">CODEX</span><span class="sub">Worldwright's Archive</span></div>
     <input class="world-name-field" id="worldName" value="${esc(DB.meta.name)}" spellcheck="false">
     <div class="topbar-spacer"></div>
+    <span class="save-status saved" id="saveStatus">Saved</span>
     <button class="tb-btn icon-only" id="btnTheme" title="Toggle light / dark">${I.sun}${I.moon}</button>
     <button class="tb-btn" id="btnBranch" title="Save alternate timeline branch">${I.graph}<span>Branches</span></button>
-    <button class="tb-btn" id="btnSave">${I.save}<span>Save</span></button>
-    <button class="tb-btn" id="btnLoad">${I.load}<span>Open</span></button>
+    <button class="tb-btn" id="btnSave" title="Save now">${I.save}<span>Save</span></button>
+    <button class="tb-btn" id="btnLoad" title="Switch / open another world">${I.load}<span>Worlds</span></button>
     <button class="tb-btn primary" id="btnExport">${I.export}<span>Export</span></button>
   </div>
   <div class="body-row">
@@ -95,9 +96,9 @@ function renderView(){
 
 /* ========== SHELL WIRING ========== */
 function wireShell(){
-  $('#worldName').onchange = e=>{ const v=e.target.value.trim()||'Untitled World'; DB.meta.name=v; e.target.value=v; notify('World renamed.', 'success', {ttl:1500}); };
-  $('#btnSave').onclick = saveWorld;
-  $('#btnLoad').onclick = loadWorld;
+  $('#worldName').onchange = e=>{ const v=e.target.value.trim()||'Untitled World'; DB.meta.name=v; e.target.value=v; scheduleSave(); notify('World renamed.', 'success', {ttl:1500}); };
+  $('#btnSave').onclick = saveNow;
+  $('#btnLoad').onclick = returnToPicker;
   $('#btnExport').onclick = openExportModal;
   $('#btnBranch').onclick = openBranchModal;
   $('#btnTheme').onclick = toggleTheme;

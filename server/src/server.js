@@ -10,6 +10,7 @@ import { attachUser, csrfGuard } from './auth/middleware.js';
 import { authRoutes, bootstrapAdmin } from './auth/routes.js';
 import { worldRoutes } from './worlds/routes.js';
 import { entityRoutes } from './worlds/entities.js';
+import { contentsRoutes } from './worlds/contents.js';
 import { assetRoutes } from './assets/routes.js';
 
 export async function buildApp() {
@@ -39,6 +40,7 @@ export async function buildApp() {
   await app.register(authRoutes);
   await app.register(worldRoutes);
   await app.register(entityRoutes);
+  await app.register(contentsRoutes);
   await app.register(assetRoutes);
 
   // Serve the vanilla frontend so app + API share one origin.

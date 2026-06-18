@@ -10,7 +10,7 @@ import { requireAuth } from '../auth/middleware.js';
 import { ownWorld } from './access.js';
 import { assetView } from '../assets/routes.js';
 
-const ENTITY_TYPES = new Set([
+export const ENTITY_TYPES = new Set([
   'char', 'place', 'faction', 'item', 'event', 'creature', 'culture', 'language', 'concept', 'spell',
 ]);
 const CANON = new Set(['canon', 'draft', 'speculative']);
@@ -42,7 +42,7 @@ function summarize(e, tagsByEntity) {
 }
 
 // The full entity, including every sub-resource. Used for the detail/inspector view.
-function fullEntity(db, e) {
+export function fullEntity(db, e) {
   const tags = db.prepare('SELECT tag FROM entity_tags WHERE entity_id = ? ORDER BY tag').all(e.id).map((r) => r.tag);
 
   const fieldRows = db.prepare('SELECT key, value FROM entity_fields WHERE entity_id = ? ORDER BY sort, rowid').all(e.id);
@@ -90,7 +90,7 @@ function fullEntity(db, e) {
 // ---- write helpers --------------------------------------------------------
 
 // Maps the frontend entity shape onto the entities table columns.
-function columnsFromBody(body, existing) {
+export function columnsFromBody(body, existing) {
   const pick = (key, fallback) => (body[key] !== undefined ? body[key] : fallback);
   const map = body.map !== undefined ? body.map : undefined;
   return {
@@ -113,9 +113,10 @@ function toIntOrNull(v) {
   return Number.isFinite(n) ? n : null;
 }
 
-// Replaces the tag/field/lexicon/relationship sub-resources for an entity. Each is only
-// touched when its key is present in the body, so PATCH can update columns alone.
-function writeSubResources(db, worldId, entityId, body) {
+// Replaces the tag/field/lexicon sub-resources for an entity. Each is only touched when its
+// key is present in the body, so PATCH can update columns alone. Relationships are handled
+// separately (writeRels) because their targets must exist first.
+export function writeSubResources(db, entityId, body) {
   if (Array.isArray(body.tags)) {
     db.prepare('DELETE FROM entity_tags WHERE entity_id = ?').run(entityId);
     const ins = db.prepare('INSERT OR IGNORE INTO entity_tags (entity_id, tag) VALUES (?, ?)');
@@ -140,22 +141,24 @@ function writeSubResources(db, worldId, entityId, body) {
     const ins = db.prepare('INSERT INTO lexicon (id, entity_id, word, gloss, sort) VALUES (?, ?, ?, ?, ?)');
     words.forEach((w, i) => ins.run(uid('lx_'), entityId, String(w.word ?? '').slice(0, 200), String(w.gloss ?? ''), i));
   }
+}
 
-  // Outgoing relationships live on the source entity in the frontend model, so saving an
-  // entity replaces its outgoing edges. Targets must resolve to entities in the same world.
-  if (Array.isArray(body.rels)) {
-    db.prepare('DELETE FROM relationships WHERE source_id = ?').run(entityId);
-    const valid = db.prepare('SELECT 1 FROM entities WHERE id = ? AND world_id = ?');
-    const ins = db.prepare(
-      'INSERT INTO relationships (id, world_id, source_id, target_id, type) VALUES (?, ?, ?, ?, ?)'
-    );
-    for (const r of body.rels) {
-      const target = r?.target;
-      const type = String(r?.type ?? '').trim();
-      if (!target || !type) continue;
-      if (!valid.get(target, worldId)) continue; // silently drop dangling targets
-      ins.run(uid('r_'), worldId, entityId, target, type.slice(0, 80));
-    }
+// Replaces an entity's outgoing relationships. Outgoing edges live on the source entity in
+// the frontend model, so saving an entity replaces them. Targets that don't resolve to an
+// entity in the same world are silently dropped (handles dangling refs and save ordering).
+export function writeRels(db, worldId, entityId, rels) {
+  if (!Array.isArray(rels)) return;
+  db.prepare('DELETE FROM relationships WHERE source_id = ?').run(entityId);
+  const valid = db.prepare('SELECT 1 FROM entities WHERE id = ? AND world_id = ?');
+  const ins = db.prepare(
+    'INSERT INTO relationships (id, world_id, source_id, target_id, type) VALUES (?, ?, ?, ?, ?)'
+  );
+  for (const r of rels) {
+    const target = r?.target;
+    const type = String(r?.type ?? '').trim();
+    if (!target || !type) continue;
+    if (!valid.get(target, worldId)) continue;
+    ins.run(uid('r_'), worldId, entityId, target, type.slice(0, 80));
   }
 }
 
@@ -256,7 +259,8 @@ export async function entityRoutes(app) {
     );
     db.transaction(() => {
       insert.run({ id, world_id: req.params.worldId, type: body.type, ...cols, created_at: ts, updated_at: ts });
-      writeSubResources(db, req.params.worldId, id, body);
+      writeSubResources(db, id, body);
+      writeRels(db, req.params.worldId, id, body.rels);
     })();
     const e = db.prepare('SELECT * FROM entities WHERE id = ?').get(id);
     return reply.code(201).send(fullEntity(db, e));
@@ -275,7 +279,8 @@ export async function entityRoutes(app) {
            occurs=@occurs, mana=@mana, created_year=@created_year, map_x=@map_x, map_y=@map_y, updated_at=@updated_at
          WHERE id=@id`
       ).run({ ...cols, updated_at: now(), id: existing.id });
-      writeSubResources(db, req.params.worldId, existing.id, body);
+      writeSubResources(db, existing.id, body);
+      writeRels(db, req.params.worldId, existing.id, body.rels);
     })();
     const e = db.prepare('SELECT * FROM entities WHERE id = ?').get(existing.id);
     return fullEntity(db, e);
